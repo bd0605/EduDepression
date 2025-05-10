@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# 資料與輸出
+data/*.xlsx
+data/*.xls
+visuals/*.png
+visuals/*.jpg
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# 版本：v1.0.0
