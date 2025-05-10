@@ -17,7 +17,6 @@
 ## 專案結構
 
 ```
-
 EduDepression/
 ├── data/                    # 資料集
 ├── db/                      # 資料庫設定
@@ -26,9 +25,8 @@ EduDepression/
 ├── src/                     # 原始碼
 ├── visuals/                 # 圖表輸出
 ├── requirements.txt         # Python套件需求
-├── run\_analysis.py          # 主要分析程式
+├── run_analysis.py          # 主要分析程式
 └── README.md                # 專案說明
-
 ```
 
 ## 快速開始
@@ -40,11 +38,9 @@ EduDepression/
 ### ✅ 方法一（推薦）：使用 phpMyAdmin（圖形化介面）
 
 ```
-
-1. 開啟 [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
-2. 建立名為 student\_depression 的資料庫
-3. 點擊匯入 → 選擇 db/init\_student\_depression.sql → 執行
-
+1. 開啟 http://localhost/phpmyadmin
+2. 建立名為 student_depression 的資料庫
+3. 點擊匯入 → 選擇 db/init_student_depression.sql → 執行
 ```
 
 ### 🧪 方法二：使用 MySQL CLI（進階用戶）
@@ -85,5 +81,5 @@ python run_analysis.py
 
 ## 作者
 
-陳貝蒂 組長
+陳貝蒂 組長  
 大學生期末小報告專案
