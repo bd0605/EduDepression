@@ -1,265 +1,118 @@
-# 版本：v1.0.0
-# 學生憂鬱症風險分析 - 簡化版
+# Colab 上正確顯示中文標籤的完整程式碼
+
+# 先安裝 Noto CJK 字型（在 Colab 執行一次即可）
+#!apt-get update -qq
+#!apt-get install -y fonts-noto-cjk -qq
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LogisticRegression
-from sklearn.cluster import KMeans
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, roc_curve, auc, accuracy_score
+from scipy import stats
 from sklearn.preprocessing import StandardScaler
-import pymysql
-from sqlalchemy import create_engine
-import warnings
-warnings.filterwarnings('ignore')
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_auc_score
 
-# 設定中文字體
-plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+# 設定中文字型（Colab 專用）
+import matplotlib.font_manager as fm
+font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+fm.fontManager.addfont(font_path)
+plt.rcParams['font.family'] = 'Noto Sans CJK JP'
 plt.rcParams['axes.unicode_minus'] = False
-plt.style.use('seaborn-v0_8')
 
-def load_data():
-    """載入資料"""
-    df = pd.read_csv('data/student_depression_dataset.csv')
-    print(f"✅ 資料載入完成：____ 筆資料")
-    return df
+# 0. 讀取資料
+df = pd.read_csv('/content/student_depression_dataset.csv')
 
-def save_to_mysql(df):
-    """儲存資料到MySQL"""
-    try:
-        engine = create_engine('mysql+pymysql://root@localhost/student_depression')
-        df.to_sql('depression_data', engine, if_exists='replace', index=False)
-        print("✅ 資料已儲存到MySQL")
-    except Exception as e:
-        print(f"❌ MySQL連接失敗: {e}")
+# 1. Depression → 0/1
+if df['Depression'].dtype == object:
+    df['Depression'] = df['Depression'].map({'No': 0, 'Yes': 1}).astype(int)
 
-def basic_analysis(df):
-    """基礎統計分析"""
-    # 學歷與憂鬱症分析
-    degree_stats = df.groupby('Degree')['Depression'].agg(['count', 'sum', 'mean']).round(3)
-    degree_stats.columns = ['總人數', '憂鬱人數', '憂鬱比例']
-    degree_stats['憂鬱百分比'] = (degree_stats['憂鬱比例'] * 100).round(1)
-    
-    print("\n## 基礎統計分析")
-    print("資料筆數：____")
-    print("欄位數量：____")
-    print("憂鬱症整體比例：____％")
-    
-    print("\n學歷憂鬱症比例：")
-    for degree, row in degree_stats.iterrows():
-        print(f"  {degree}: ____％")
-    
-    return degree_stats
+# 2. 去重
+df = df.drop_duplicates().reset_index(drop=True)
 
-def kmeans_analysis(df):
-    """K-means聚類分析"""
-    features = ['Academic Pressure', 'Work Pressure', 'CGPA', 'Study Satisfaction']
-    X = df[features].copy()
-    
-    # 標準化
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    # K-means
-    kmeans = KMeans(n_clusters=3, random_state=42)
-    df['Cluster'] = kmeans.fit_predict(X_scaled)
-    
-    # 結果統計
-    cluster_stats = df.groupby('Cluster')['Depression'].agg(['count', 'mean'])
-    cluster_stats.columns = ['樣本數', '憂鬱比例']
-    
-    # 視覺化
-    plt.figure(figsize=(8, 6))
-    plt.bar(cluster_stats.index, cluster_stats['憂鬱比例'], color=['#3498db', '#e74c3c', '#f39c12'])
-    plt.xlabel('群組')
-    plt.ylabel('憂鬱比例')
-    plt.title('K-means 聚類結果', fontsize=16)
-    plt.ylim(0, 1)
-    plt.savefig('visuals/kmeans_result.png')
-    plt.close()
-    
-    print("\n## K-means聚類分析")
-    print("群組數：3")
-    for i, row in cluster_stats.iterrows():
-        print(f"群組{i}: 樣本數=____, 憂鬱比例=____％")
-    
-    return cluster_stats
+# 3. 填補 Degree 空值為眾數，並去除「其他」
+deg_mode = df['Degree'].mode()
+deg_fill = deg_mode.iloc[0] if not deg_mode.empty else ''
+df['Degree'] = df['Degree'].fillna(deg_fill).astype(str).str.strip()
+df.loc[df['Degree'] == '其他', 'Degree'] = deg_fill
 
-def logistic_regression(df):
-    """邏輯回歸分析"""
-    features = ['Academic Pressure', 'Work Pressure', 'CGPA', 'Study Satisfaction']
-    X = df[features]
-    y = df['Depression']
-    
-    # 分割資料
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # 標準化
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    # 訓練模型
-    lr = LogisticRegression(random_state=42)
-    lr.fit(X_train_scaled, y_train)
-    
-    # 預測
-    y_pred = lr.predict(X_test_scaled)
-    y_pred_proba = lr.predict_proba(X_test_scaled)[:, 1]
-    
-    # 評估
-    accuracy = accuracy_score(y_test, y_pred)
-    
-    # 混淆矩陣
-    plt.figure(figsize=(6, 5))
-    cm = confusion_matrix(y_test, y_pred)
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title('混淆矩陣')
-    plt.ylabel('實際')
-    plt.xlabel('預測')
-    plt.savefig('visuals/confusion_matrix.png')
-    plt.close()
-    
-    # ROC曲線
-    plt.figure(figsize=(6, 5))
-    fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-    roc_auc = auc(fpr, tpr)
-    plt.plot(fpr, tpr, linewidth=2, label=f'ROC曲線 (AUC = ____)')
-    plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
-    plt.xlabel('假陽性率')
-    plt.ylabel('真陽性率')
-    plt.title('ROC曲線')
-    plt.legend()
-    plt.savefig('visuals/roc_curve.png')
-    plt.close()
-    
-    print("\n## 邏輯回歸分析")
-    print(f"準確率：____％")
-    print(f"AUC值：____")
-    print("\n特徵重要性：")
-    for feature, coef in zip(features, lr.coef_[0]):
-        print(f"  {feature}: 係數=____")
-    
-    return accuracy, roc_auc
+# 4. 合併為四級
 
-def create_visualizations(df, degree_stats):
-    """建立基礎視覺化"""
-    # 學歷憂鬱率長條圖
-    plt.figure(figsize=(10, 6))
-    degrees = degree_stats.index
-    depression_rates = degree_stats['憂鬱百分比']
-    bars = plt.bar(degrees, depression_rates, color=sns.color_palette("RdYlBu_r", len(degrees)))
-    plt.xlabel('學歷', fontsize=12)
-    plt.ylabel('憂鬱症比例 (%)', fontsize=12)
-    plt.title('不同學歷憂鬱症比例', fontsize=16)
-    plt.xticks(rotation=45)
-    plt.ylim(0, 100)
-    
-    # 加上數值標籤（留空待填寫）
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height + 1,
-                f'__%', ha='center', va='bottom')
-    
-    plt.tight_layout()
-    plt.savefig('visuals/degree_depression_rate.png')
-    plt.close()
-    
-    print("✅ 視覺化圖表已生成")
 
-def generate_report():
-    """生成報告模板"""
-    report_template = """
-# 學生憂鬱症風險分析報告
-## 版本：v1.0.0
-## 日期：2025-05-11
+def simplify_degree(x):
+    x = x.lower()
+    if any(k in x for k in ['phd', '博士']):
+        return '博士'
+    if any(k in x for k in ['master', 'm.', '碩士']):
+        return '碩士'
+    if any(k in x for k in [
+        'bachelor', 'b.', '大學', 'ba', 'bsc', 'bcom', 'be',
+        'mba', 'mcom', 'msc', 'bca', 'barch', 'mpharm', 'bpharm'
+    ]):
+        return '大學'
+    return '高中及以下'
 
-## 1. 資料來源與內容
-- **資料來源**：Student Depression Dataset
-- **資料筆數**：____ 筆
-- **資料欄位**：____ 個
 
-### 主要欄位說明：
-1. Gender（性別）
-2. Age（年齡）
-3. Degree（學歷）
-4. Academic Pressure（學業壓力）
-5. Work Pressure（工作壓力）
-6. CGPA（學業成績）
-7. Study Satisfaction（學習滿意度）
-8. Depression（是否有憂鬱症）
+df['Degree4'] = df['Degree'].apply(simplify_degree)
 
-## 2. 資料清洗過程
-- 檢查缺失值：____個缺失值
-- 處理異常值：____個異常值
-- 資料標準化：使用StandardScaler進行特徵標準化
+# 5. 填補數值欄缺失（中位數）
+numeric_cols = ['Age', 'Academic Pressure',
+                'Work Pressure', 'CGPA', 'Study Satisfaction']
+medians = df[numeric_cols].median()
+df[numeric_cols] = df[numeric_cols].fillna(medians)
 
-## 3. 分析結果
+# 6. Z-score 剔除極端值（|Z|<3）
+z = stats.zscore(df[numeric_cols])
+df = df[(np.abs(z) < 3).all(axis=1)].reset_index(drop=True)
 
-### 3.1 基礎統計分析
-- 整體憂鬱症比例：____％
-- 最高風險學歷：____（憂鬱率：____％）
-- 最低風險學歷：____（憂鬱率：____％）
+# 7. 標準化
+scaler = StandardScaler()
+df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
-### 3.2 K-means聚類分析
-- 群組數：3
-- 群組0：樣本數=____，憂鬱比例=____％
-- 群組1：樣本數=____，憂鬱比例=____％
-- 群組2：樣本數=____，憂鬱比例=____％
+# 8. 映射四級為 1–4
+order4 = ['高中及以下', '大學', '碩士', '博士']
+mapping4 = {deg: i+1 for i, deg in enumerate(order4)}
+df['degree_ord4'] = df['Degree4'].map(mapping4)
 
-### 3.3 邏輯回歸分析
-- 模型準確率：____％
-- AUC值：____
-- 重要特徵：
-  - Academic Pressure：係數=____
-  - Work Pressure：係數=____
-  - CGPA：係數=____
-  - Study Satisfaction：係數=____
+# ——— 分析與繪圖 ———
 
-## 4. 結論與建議
-（待填寫）
+# A. 計算並保留所有四級，如果某級沒有樣本則為 0%
+rate4 = (
+    df.groupby('Degree4')['Depression']
+    .mean()
+    .mul(100)
+    .round(1)
+    .reindex(order4)
+    .fillna(0)
+)
 
-## 5. 資料視覺化（Grafana Dashboard）
-- Depression Rate by Degree
-- Total Students by Degree
-- Overall Depression Rate
+plt.figure(figsize=(6, 5))
+sns.barplot(x=rate4.index, y=rate4.values, palette='viridis')
+plt.xlabel('學歷等級')
+plt.ylabel('憂鬱症比例 (%)')
+plt.title('學歷等級 vs 憂鬱率')
+plt.ylim(0, rate4.max() + 5)
+for i, v in enumerate(rate4.values):
+    plt.text(i, v + 1, f"{v:.1f}%", ha='center')
+plt.tight_layout()
+plt.show()
 
----
-*報告生成時間：2025-05-11*
-"""
-    
-    with open('report/analysis_report.md', 'w', encoding='utf-8') as f:
-        f.write(report_template)
-    
-    print("✅ 報告模板已生成")
+# B. 相關係數
+corr4 = df['degree_ord4'].corr(df['Depression'])
+print(f"Degree4 序數 vs Depression 相關係數：{corr4:.3f}")
 
-def main():
-    print("=== 學生憂鬱症風險分析 (簡化版) ===")
-    print("版本：v1.0.0")
-    
-    # 載入資料
-    df = load_data()
-    
-    # MySQL儲存
-    save_to_mysql(df)
-    
-    # 基礎分析
-    degree_stats = basic_analysis(df)
-    
-    # 視覺化
-    create_visualizations(df, degree_stats)
-    
-    # K-means聚類
-    kmeans_analysis(df)
-    
-    # 邏輯回歸
-    logistic_regression(df)
-    
-    # 生成報告
-    generate_report()
-    
-    print("\n✅ 分析完成！請查看 report/ 目錄中的報告模板並填寫數值")
+# C. 邏輯回歸
+X = df[['degree_ord4']]
+y = df['Depression']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+lr = LogisticRegression()
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+y_proba = lr.predict_proba(X_test)[:, 1]
 
-if __name__ == "__main__":
-    main()
+acc4 = accuracy_score(y_test, y_pred)
+auc4 = roc_auc_score(y_test, y_proba)
+print(f"邏輯回歸準確率：{acc4:.3f}，AUC：{auc4:.3f}")
