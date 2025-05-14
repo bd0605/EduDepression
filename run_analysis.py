@@ -1,21 +1,21 @@
-# Colab 上正確顯示中文標籤的完整程式碼
+# Colab 上正確顯示中文標籤的完整程式碼（含多特徵 Logistic Regression）
 
 # 先安裝 Noto CJK 字型（在 Colab 執行一次即可）
-#!apt-get update -qq
-#!apt-get install -y fonts-noto-cjk -qq
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy import stats
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+import matplotlib.font_manager as fm
 from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from scipy import stats
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+# !apt-get update - qq
+# !apt-get install - y fonts-noto-cjk - qq
+
 
 # 設定中文字型（Colab 專用）
-import matplotlib.font_manager as fm
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 fm.fontManager.addfont(font_path)
 plt.rcParams['font.family'] = 'Noto Sans CJK JP'
@@ -32,10 +32,9 @@ if df['Depression'].dtype == object:
 df = df.drop_duplicates().reset_index(drop=True)
 
 # 3. 填補 Degree 空值為眾數，並去除「其他」
-deg_mode = df['Degree'].mode()
-deg_fill = deg_mode.iloc[0] if not deg_mode.empty else ''
-df['Degree'] = df['Degree'].fillna(deg_fill).astype(str).str.strip()
-df.loc[df['Degree'] == '其他', 'Degree'] = deg_fill
+deg_mode = df['Degree'].mode().iloc[0]
+df['Degree'] = df['Degree'].fillna(deg_mode).astype(str).str.strip()
+df.loc[df['Degree'] == '其他', 'Degree'] = deg_mode
 
 # 4. 合併為四級
 
@@ -102,17 +101,22 @@ plt.show()
 corr4 = df['degree_ord4'].corr(df['Depression'])
 print(f"Degree4 序數 vs Depression 相關係數：{corr4:.3f}")
 
-# C. 邏輯回歸
-X = df[['degree_ord4']]
+# C. 多特徵 Logistic Regression 預測（提升精確度）
+features = ['degree_ord4'] + numeric_cols  # 加入所有數值特徵
+X = df[features]
 y = df['Depression']
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
-lr = LogisticRegression()
+
+# 使用 class_weight='balanced' 且增加 max_iter
+lr = LogisticRegression(max_iter=2000, class_weight='balanced')
 lr.fit(X_train, y_train)
+
 y_pred = lr.predict(X_test)
 y_proba = lr.predict_proba(X_test)[:, 1]
 
-acc4 = accuracy_score(y_test, y_pred)
-auc4 = roc_auc_score(y_test, y_proba)
-print(f"邏輯回歸準確率：{acc4:.3f}，AUC：{auc4:.3f}")
+acc = accuracy_score(y_test, y_pred)
+auc = roc_auc_score(y_test, y_proba)
+print(f"多特徵 Logistic Regression 準確率：{acc:.3f}，AUC：{auc:.3f}")
