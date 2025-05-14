@@ -5,17 +5,20 @@
 
 ## XAMPP 設定
 
-### 1. 安裝XAMPP
+### 1. 安裝 XAMPP
+
 - 下載連結：https://www.apachefriends.org/
 - 選擇適合您作業系統的版本
 - 安裝時勾選 Apache 和 MySQL
 
 ### 2. 啟動服務
+
 1. 開啟 XAMPP Control Panel
 2. 啟動 Apache（非必要）
 3. 啟動 MySQL（必要）
 
 ### 3. 建立資料庫
+
 1. 開啟 phpMyAdmin：http://localhost/phpmyadmin
 2. 建立資料庫：
    ```sql
@@ -29,14 +32,17 @@
 ## Grafana 設定
 
 ### 1. 安裝 Grafana
+
 - Windows: 下載安裝檔
 - Mac: `brew install grafana`
 - Linux: 參考官方文檔
 
 ### 2. 啟動 Grafana
+
 ```bash
 grafana-server
 ```
+
 預設網址：http://localhost:3000  
 預設帳密：admin/admin
 
@@ -55,23 +61,25 @@ grafana-server
 1. 建立新 Dashboard
 2. 新增 Panel，選擇查詢：
    ```sql
-   SELECT degree, depression_pct 
+   SELECT degree, depression_pct
    FROM degree_depression_stats
    ```
-3. 選擇適合的視覺化類型（Bar Chart、Pie Chart等）
+3. 選擇適合的視覺化類型（Bar Chart、Pie Chart 等）
 
 ## 常用查詢範例
 
 ### 學歷憂鬱率
+
 ```sql
-SELECT degree, depression_pct 
+SELECT degree, depression_pct
 FROM degree_depression_stats
 ORDER BY depression_pct DESC
 ```
 
 ### 整體統計
+
 ```sql
-SELECT 
+SELECT
   COUNT(*) as total_students,
   SUM(depression) as depressed_count,
   ROUND(AVG(depression)*100,1) as depression_rate
@@ -79,8 +87,9 @@ FROM depression_data
 ```
 
 ### 性別統計
+
 ```sql
-SELECT 
+SELECT
   gender,
   COUNT(*) as count,
   ROUND(AVG(depression)*100,1) as depression_rate
@@ -90,14 +99,16 @@ GROUP BY gender
 
 ## 故障排除
 
-1. **MySQL連接錯誤**
-   - 確認MySQL服務已啟動
+1. **MySQL 連接錯誤**
+
+   - 確認 MySQL 服務已啟動
    - 檢查使用者權限
 
-2. **Grafana連接失敗**
+2. **Grafana 連接失敗**
+
    - 確認資料庫名稱正確
    - 確認使用者帳密
 
 3. **無資料顯示**
    - 確認已執行 `run_analysis.py`
-   - 檢查SQL查詢語法
+   - 檢查 SQL 查詢語法

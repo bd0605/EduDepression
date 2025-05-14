@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>學生憂鬱症預測分析</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #F5F9FF;
+      color: #172B4D;
+      margin: 0; padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #0065FF;
+      margin-bottom: 30px;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    .tabs button {
+      background: #FFF;
+      border: 1px solid #DFE1E6;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .tabs button.active {
+      background: #0065FF;
+      color: #FFF;
+      border-color: #0065FF;
+    }
+    .chart-container {
+      max-width: 900px;
+      margin: 0 auto 40px;
+      background: #FFF;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    }
+    .chart-note {
+      font-size: 14px;
+      color: #666;
+      border-top: 1px solid #DFE1E6;
+      padding-top: 10px;
+      margin-top: 20px;
+    }
+    table.matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 1px solid #DDD; padding: 12px; text-align: center;
+    }
+    .row-header { background: #F5F5F5; }
+    .true-positive { background: rgba(0,196,159,0.2); color: #004D3A; }
+    .true-negative { background: rgba(76,154,255,0.2); color: #0043A9; }
+    .false-positive { background: rgba(255,187,40,0.2); color: #99610B; }
+    .false-negative { background: rgba(255,128,66,0.2); color: #A93F00; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .metric-item {
+      background: #F9F9F9;
+      padding: 10px 15px;
+      border-left: 4px solid #0065FF;
+      display: flex;
+      justify-content: space-between;
+    }
+    .dashboard-footnote {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>學生憂鬱症預測分析</h1>
+
+<div class="tabs">
+  <button data-tab="accuracy" class="active">模型準確率比較</button>
+  <button data-tab="importance">特徵重要性分析</button>
+  <button data-tab="eduDep">學歷與憂鬱率關係</button>
+  <button data-tab="metrics">模型評估指標比較</button>
+  <button data-tab="confMatrix">混淆矩陣分析</button>
+</div>
+
+<!-- 圖表區 -->
+<div id="accuracy" class="chart-container">
+  <canvas id="chartAccuracy"></canvas>
+  <div class="chart-note">
+    資料來源: Qasrawi et al. (2022)、Iparraguirre-Villanueva et al. (2024) 等
+  </div>
+</div>
+<div id="importance" class="chart-container" style="display:none">
+  <canvas id="chartImportance"></canvas>
+  <div class="chart-note">
+    資料來源: 綜合多篇研究結果
+  </div>
+</div>
+<div id="eduDep" class="chart-container" style="display:none">
+  <canvas id="chartEduDep"></canvas>
+  <div class="chart-note">
+    觀察: 學歷越高憂鬱率越低，教育可能是保護因子
+  </div>
+</div>
+<div id="metrics" class="chart-container" style="display:none">
+  <canvas id="chartMetrics"></canvas>
+  <div class="chart-note">
+    觀察: SVM與AdaBoost表現優於XGBoost
+  </div>
+</div>
+<div id="confMatrix" class="chart-container" style="display:none">
+  <h3 style="text-align:center;">SVM 模型混淆矩陣</h3>
+  <table class="matrix-table">
+    <thead>
+      <tr><th></th><th>預測無憂鬱</th><th>預測有憂鬱</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-header">實際無憂鬱</td>
+        <td class="true-negative">320 (TN)</td>
+        <td class="false-positive">35 (FP)</td>
+      </tr>
+      <tr>
+        <td class="row-header">實際有憂鬱</td>
+        <td class="false-negative">40 (FN)</td>
+        <td class="true-positive">405 (TP)</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="metrics-grid">
+    <div class="metric-item"><span>準確率:</span><span>93.2%</span></div>
+    <div class="metric-item"><span>精確率:</span><span>92.1%</span></div>
+    <div class="metric-item"><span>召回率:</span><span>91.0%</span></div>
+    <div class="metric-item"><span>特異度:</span><span>90.2%</span></div>
+    <div class="metric-item"><span>F1分數:</span><span>91.5</span></div>
+  </div>
+  <div class="chart-note">資料來源: SVM 測試集表現</div>
+</div>
+
+<div class="dashboard-footnote">
+  © 2025 學生心理健康預測研究組 - 僅供研究參考
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // 資料定義
+  const modelAccuracyData = [
+    { model:"AdaBoost", acc:92.56 },
+    { model:"SVM",       acc:92.5  },
+    { model:"XGBoost",   acc:83.0  },
+    { model:"Logistic",  acc:77.0  },
+    { model:"RandomF",   acc:76.4  },
+    { model:"NN",        acc:75.0  },
+    { model:"KNN",       acc:70.0  },
+    { model:"DTree",     acc:62.0  }
+  ];
+  const featureImportanceData = [
+    { feature:"學業壓力", val:9.5 },
+    { feature:"睡眠時間", val:8.7 },
+    { feature:"家庭支持", val:8.5 },
+    { feature:"財務壓力", val:8.2 },
+    { feature:"自殺意念史", val:7.9 },
+    { feature:"學習滿意度", val:7.6 },
+    { feature:"心理疾病家族史", val:7.4 },
+    { feature:"校園霸凌經歷", val:7.1 },
+    { feature:"性別", val:6.5 },
+    { feature:"年齡", val:5.8 },
+    { feature:"CGPA", val:5.5 },
+    { feature:"飲食習慣", val:5.2 },
+    { feature:"學歷程度", val:4.8 },
+    { feature:"城市", val:3.5 }
+  ].sort((a,b)=>b.val-a.val).slice(0,10);
+  const educationDepressionData = [
+    { lvl:"高中及以下", rate:17.8 },
+    { lvl:"大學",       rate:14.5 },
+    { lvl:"碩士",       rate:11.2 },
+    { lvl:"博士",       rate: 8.7 }
+  ];
+  const modelMetricsComparisonData = [
+    { name:"SVM",       準確率:92.5, 精確率:91.2, 召回率:89.7, F1:90.4, AUC:94.1 },
+    { name:"AdaBoost",  準確率:92.56,精確率:90.8, 召回率:91.5, F1:91.1, AUC:93.7 },
+    { name:"XGBoost",   準確率:83.0, 精確率:82.6, 召回率:81.9, F1:82.2, AUC:87.3 }
+  ];
+
+  // 創 Chart 的函式
+  function createBarChart(ctx, labels, datasets, options) {
+    return new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: Object.assign({
+        responsive: true,
+        scales: {
+          x: { stacked: false },
+          y: { stacked: false }
+        }
+      }, options)
+    });
+  }
+
+  // 1. 模型準確率
+  createBarChart(
+    document.getElementById('chartAccuracy'),
+    modelAccuracyData.map(d=>d.model),
+    [{ label:'準確率 (%)', data:modelAccuracyData.map(d=>d.acc), backgroundColor:'#4C9AFF' }],
+    { indexAxis: 'y', scales:{ x:{ max:100 } } }
+  );
+
+  // 2. 特徵重要性
+  createBarChart(
+    document.getElementById('chartImportance'),
+    featureImportanceData.map(d=>d.feature),
+    [{ label:'重要性分數', data:featureImportanceData.map(d=>d.val), backgroundColor:'#00C49F' }],
+    { indexAxis: 'y', scales:{ x:{ max:10 } } }
+  );
+
+  // 3. 學歷 vs 憂鬱率
+  createBarChart(
+    document.getElementById('chartEduDep'),
+    educationDepressionData.map(d=>d.lvl),
+    [{ label:'憂鬱率 (%)', data:educationDepressionData.map(d=>d.rate), backgroundColor:'#FFBB28' }],
+    { scales:{ y:{ max:20 } } }
+  );
+
+  // 4. 模型多指標比較
+  const metrics = ['準確率','精確率','召回率','F1','AUC'];
+  const metricDatasets = metrics.map((m,i)=>({
+    label: m,
+    data: modelMetricsComparisonData.map(d=>d[m]),
+    backgroundColor: ['#4C9AFF','#00C49F','#FFBB28','#FF8042','#8884D8'][i]
+  }));
+  createBarChart(
+    document.getElementById('chartMetrics'),
+    modelMetricsComparisonData.map(d=>d.name),
+    metricDatasets,
+    {}
+  );
+
+  // 標籤頁切換
+  document.querySelectorAll('.tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.chart-container').forEach(c=>c.style.display='none');
+      document.getElementById(btn.dataset.tab).style.display='block';
+    });
+  });
+</script>
+
+</body>
+</html>
