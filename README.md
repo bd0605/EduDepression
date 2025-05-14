@@ -7,6 +7,10 @@
 
 這是一個使用 XAMPP + MySQL + Grafana 進行學生憂鬱症風險分析的期末報告專案。透過機器學習方法（K-means 聚類和邏輯回歸）分析不同學歷層級學生的憂鬱症風險。
 
+## 分析論文
+
+https://bd0605.github.io/EduDepression/index.html
+
 ## 技術架構
 
 - **資料庫**：MySQL (XAMPP)
