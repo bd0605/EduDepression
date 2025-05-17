@@ -18,8 +18,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-!apt-get update - qq
-!apt-get install - y fonts-noto-cjk - qq
+
+# !apt-get update - qq
+# !apt-get install - y fonts-noto-cjk - qq
 
 
 # 完善的中文字型設定
@@ -212,9 +213,11 @@ for bar in bars:
         fontsize=12
     )
 
-plt.title('不同學業壓力水平的憂鬱比例', fontproperties=zh_font, fontsize=16)
-plt.xlabel('學業壓力水平', fontproperties=zh_font, fontsize=14)
-plt.ylabel('憂鬱比例', fontproperties=zh_font, fontsize=14)
+plt.xticks(fontproperties=zh_font, fontsize=14)
+plt.yticks(fontproperties=zh_font, fontsize=14)
+plt.xlabel('學業壓力水平', fontproperties=zh_font)
+plt.ylabel('憂鬱比例', fontproperties=zh_font)
+plt.title('不同學業壓力水平的憂鬱比例', fontproperties=zh_font)
 plt.ylim(0, 1)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 
@@ -291,6 +294,20 @@ else:
 
 plt.tight_layout()
 
+# ❶ 定義 contingency_table
+contingency_table = pd.crosstab(
+    df['Academic Pressure_Category'],
+    df['Depression']
+)
+
+print("\n交叉列聯表：")
+print(contingency_table)
+
+# ❷ 再做卡方檢定
+chi2, p_value, dof, expected = chi2_contingency(contingency_table)
+print("\n不同壓力等級的憂鬱風險差異檢定 (卡方檢定):")
+print(f"卡方值: {chi2:.3f}, 自由度: {dof}, p-value: {p_value:.4f}")
+print("結論:", "有顯著差異 (p < 0.05)" if p_value < 0.05 else "無顯著差異 (p ≥ 0.05)")
 
 # 使用卡方檢定
 chi2, p_value, dof, expected = chi2_contingency(contingency_table)
@@ -321,36 +338,12 @@ corr_with_ap = df[num_cols].corr(
 print("學業壓力與其他變數的相關性:")
 print(corr_with_ap)
 
-# 5.2 學業壓力、學歷與憂鬱風險的三維關係
-plt.figure(figsize=(12, 8))
-for i, degree in enumerate(order4):
-    subset = df[df['Degree4'] == degree]
-    plt.subplot(2, 2, i+1)
-
-    # 繪製學業壓力與憂鬱風險的關係，按學歷分組
-    sns.regplot(
-        x='Academic Pressure_Value',
-        y='Depression',
-        data=subset,
-        scatter_kws={'alpha': 0.5},
-        line_kws={'color': 'red'}
-    )
-    corr = subset['Academic Pressure_Value'].corr(subset['Depression'])
-
-    plt.title(f'{degree}學生: 學業壓力與憂鬱風險 (r={corr:.2f})',
-              fontproperties=zh_font, fontsize=12)
-    plt.xlabel('學業壓力', fontproperties=zh_font, fontsize=10)
-    plt.ylabel('憂鬱風險', fontproperties=zh_font, fontsize=10)
-    plt.ylim(-0.1, 1.1)
-
-plt.tight_layout()
-plt.show()
-
 # 6. 模型建立與評估
-# 6.1 準備特徵與標籤，強調學業壓力
+# 6.1 準備特徵與標籤，並標準化
 features = ['Academic Pressure_Value', 'degree_ord4'] + [c for c in df.columns if c.startswith(
     'Gender_')] + [col for col in num_cols if col != 'Academic Pressure_Value']
-X, y = df[features], df['Depression']
+X = scaler.fit_transform(df[features])
+y = df['Depression']
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -358,10 +351,16 @@ X_train, X_test, y_train, y_test = train_test_split(
 # 6.2 Logistic Regression模型
 print("\n====== 預測模型建立與評估 ======")
 print("\nLogistic Regression模型:")
-lr = LogisticRegression(class_weight='balanced', max_iter=2000)
+lr = LogisticRegression(
+    class_weight='balanced',
+    solver='liblinear',    # 用 liblinear 演算法更穩定
+    max_iter=5000,         # 多跑幾次迭代
+    random_state=42
+)
+
 lr.fit(X_train, y_train)
 y_pred = lr.predict(X_test)
-y_proba = lr.predict_proba(X_test)[:, 1]
+y_proba = lr.predict_proba(X_test)[:, 1]  # type: ignore[index]
 
 # 6.3 混淆矩陣分析
 cm = confusion_matrix(y_test, y_pred)
@@ -371,8 +370,8 @@ sns.heatmap(
     annot=True,
     fmt='d',
     cmap='Blues',
-    xticklabels=['預測 0（無憂鬱）', '預測 1（有憂鬱）'],
-    yticklabels=['實際 0（無憂鬱）', '實際 1（有憂鬱）'],
+    xticklabels=['預測 0（無憂鬱）', '預測 1（有憂鬱）'],  # type: ignore[arg-type]
+    yticklabels=['實際 0（無憂鬱）', '實際 1（有憂鬱）'],  # type: ignore[arg-type]
     annot_kws={'fontproperties': zh_font, 'fontsize': 11}
 )
 plt.title('Logistic Regression 混淆矩陣', fontproperties=zh_font, fontsize=14)
@@ -388,7 +387,12 @@ acc = accuracy_score(y_test, y_pred)
 auc = roc_auc_score(y_test, y_proba)
 print(f"多特徵 Logistic Regression 準確率：{acc:.3f}，AUC：{auc:.3f}")
 print("\n分類報告：")
-print(classification_report(y_test, y_pred))
+print(classification_report(
+    y_test,
+    y_pred,
+    zero_division=0        # 預測不到某類別時回傳 0，不出 warning
+))
+
 
 # 6.5 特徵重要性分析
 importance = pd.Series(
@@ -415,11 +419,11 @@ rf_auc = roc_auc_score(y_test, rf_proba)
 print(f"隨機森林模型準確率: {rf_acc:.3f}, AUC: {rf_auc:.3f}")
 
 # 計算隨機森林特徵重要性
-result = permutation_importance(
+result = permutation_importance(      # type: ignore[call-arg]
     rf, X_test, y_test, n_repeats=10, random_state=42, n_jobs=-1
 )
 rf_importance = pd.Series(
-    result.importances_mean,
+    result.importances_mean,          # type: ignore[attr-defined]
     index=features
 ).sort_values(ascending=False)
 
