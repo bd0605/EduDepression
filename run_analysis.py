@@ -4,8 +4,6 @@
 from scipy.stats import chi2_contingency
 from sklearn.inspection import permutation_importance
 from sklearn.ensemble import RandomForestClassifier
-from statsmodels.graphics.mosaicplot import mosaic
-from statsmodels.stats.proportion import proportions_ztest
 from sklearn.metrics import confusion_matrix, accuracy_score, roc_auc_score, roc_curve, classification_report
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -18,6 +16,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="Glyph .* missing from font\\(s\\) DejaVu Sans\\.",
+    category=UserWarning,
+    module="seaborn.utils"
+)
 
 # !apt-get update - qq
 # !apt-get install - y fonts-noto-cjk - qq
@@ -128,12 +133,12 @@ num_cols = ['Age', 'Academic Pressure_Value',
 df[num_cols] = df[num_cols].fillna(df[num_cols].median())
 z = stats.zscore(df[num_cols])
 df = df[(np.abs(z) < 3).all(axis=1)].reset_index(drop=True)
-scaler = StandardScaler()
-df_scaled = pd.DataFrame(
-    scaler.fit_transform(df[num_cols]),
-    columns=num_cols,
-    index=df.index
-)
+# scaler = StandardScaler()
+# df_scaled = pd.DataFrame(
+#     scaler.fit_transform(df[num_cols]),
+#     columns=num_cols,
+#     index=df.index
+# )
 
 # 3.4 學歷序數與增強特徵
 df['degree_ord4'] = df['Degree4'].map({d: i+1 for i, d in enumerate(order4)})
@@ -303,12 +308,6 @@ contingency_table = pd.crosstab(
 print("\n交叉列聯表：")
 print(contingency_table)
 
-# ❷ 再做卡方檢定
-chi2, p_value, dof, expected = chi2_contingency(contingency_table)
-print("\n不同壓力等級的憂鬱風險差異檢定 (卡方檢定):")
-print(f"卡方值: {chi2:.3f}, 自由度: {dof}, p-value: {p_value:.4f}")
-print("結論:", "有顯著差異 (p < 0.05)" if p_value < 0.05 else "無顯著差異 (p ≥ 0.05)")
-
 # 使用卡方檢定
 chi2, p_value, dof, expected = chi2_contingency(contingency_table)
 print("\n不同壓力等級的憂鬱風險差異檢定 (卡方檢定):")
@@ -392,7 +391,6 @@ print(classification_report(
     y_pred,
     zero_division=0        # 預測不到某類別時回傳 0，不出 warning
 ))
-
 
 # 6.5 特徵重要性分析
 importance = pd.Series(
