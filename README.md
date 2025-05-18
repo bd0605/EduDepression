@@ -183,6 +183,8 @@ python run_analysis.py --to-mysql
 5. 匯入 `docs/grafana_dashboard.json` 設定檔
 6. 即可使用預先設計的視覺化儀表板
 
+詳細設定步驟請參考 `docs/mysql_grafana_guide.md`。
+
 ---
 
 ## 模組說明
