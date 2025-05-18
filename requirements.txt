@@ -1,8 +1,9 @@
 pandas
 numpy
+scipy
 matplotlib
 seaborn
 scikit-learn
-pymysql
 sqlalchemy
-jupyter
+pymysql
+requests
