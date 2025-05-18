@@ -1,5 +1,4 @@
 # —— 完整整合版：學業壓力與憂鬱風險相關性分析 ——
-
 # 1. 系統與字型設定
 from scipy.stats import chi2_contingency
 from sklearn.inspection import permutation_importance
@@ -10,13 +9,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from scipy import stats
-from matplotlib.font_manager import FontProperties
-import matplotlib.font_manager as fm
-import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+from matplotlib.font_manager import FontProperties
+import seaborn as sns
 import numpy as np
 import pandas as pd
+import os
+import platform
 import warnings
+
 warnings.filterwarnings(
     "ignore",
     message="Glyph .* missing from font\\(s\\) DejaVu Sans\\.",
@@ -24,17 +26,55 @@ warnings.filterwarnings(
     module="seaborn.utils"
 )
 
-# !apt-get update - qq
-# !apt-get install - y fonts-noto-cjk - qq
+
+# 📦 若在 Colab 上，自動安裝中文字型
+try:
+    if "google.colab" in str(get_ipython()):
+        print("🔧 Colab 偵測中，嘗試安裝中文字型...")
+        os.system("apt-get install -y fonts-noto-cjk > /dev/null")
+except:
+    pass
+
+# ✅ 跨平台自動選擇中文字型
 
 
-# 完善的中文字型設定
-font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
-fm.fontManager.addfont(font_path)
-zh_font = FontProperties(fname=font_path)
-plt.rcParams['font.family'] = 'Noto Sans CJK JP'
-plt.rcParams['axes.unicode_minus'] = False
-sns.set_style('whitegrid')
+def load_chinese_font():
+    system = platform.system()
+    paths = []
+
+    if system == "Windows":
+        paths = [
+            "C:/Windows/Fonts/msjh.ttc",
+            "C:/Windows/Fonts/mingliu.ttc"
+        ]
+    elif system == "Darwin":  # macOS
+        paths = [
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Medium.ttc"
+        ]
+    else:  # Linux / Colab
+        paths = [
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+        ]
+
+    for path in paths:
+        if os.path.exists(path):
+            fm.fontManager.addfont(path)
+            font = FontProperties(fname=path)
+            plt.rcParams["font.family"] = font.get_name()
+            print(f"✅ 已載入中文字型：{font.get_name()}")
+            return font
+
+    print("⚠️ 找不到中文字型，使用預設英文字型")
+    return FontProperties()
+
+
+# ✅ 設定全域 zh_font
+zh_font = load_chinese_font()
+plt.rcParams["axes.unicode_minus"] = False
+sns.set_style("whitegrid")
+
 
 # 2. 資料讀取與基本處理
 # 2.1 保留原始資料副本
@@ -152,8 +192,9 @@ ap_corr = df['Academic Pressure_Value'].corr(df['Depression'])
 print(f"學業壓力與憂鬱症的相關係數: {ap_corr:.3f}")
 
 # 4.2 不同壓力水平的憂鬱風險分析 - 新增
-ap_group = df.groupby('Academic Pressure_Category')[
+ap_group = df.groupby('Academic Pressure_Category', observed=False)[
     'Depression'].agg(['mean', 'count'])
+
 ap_group.columns = ['憂鬱比例', '樣本數']
 print("\n不同學業壓力水平的憂鬱風險:")
 print(ap_group)
@@ -338,6 +379,8 @@ print("學業壓力與其他變數的相關性:")
 print(corr_with_ap)
 
 # 6. 模型建立與評估
+scaler = StandardScaler()  # ← ✅ 加上這行就不會報 NameError
+
 # 6.1 準備特徵與標籤，並標準化
 features = ['Academic Pressure_Value', 'degree_ord4'] + [c for c in df.columns if c.startswith(
     'Gender_')] + [col for col in num_cols if col != 'Academic Pressure_Value']
