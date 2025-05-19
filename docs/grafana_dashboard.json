@@ -25,7 +25,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "MySQL",
+      "datasource": "mysql-EduDepression",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -136,7 +136,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "MySQL",
+      "datasource": "mysql-EduDepression",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -273,7 +273,7 @@
       }
     },
     {
-      "datasource": "MySQL",
+      "datasource": "mysql-EduDepression",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -395,7 +395,7 @@
         "mode": "opacity"
       },
       "dataFormat": "tsbuckets",
-      "datasource": "MySQL",
+      "datasource": "mysql-EduDepression",
       "fieldConfig": {
         "defaults": {},
         "overrides": []

@@ -1,5 +1,5 @@
 -- MySQL 建表語法 for EduDepression 專案
--- 用於定義資料表結構與欄位型別
+-- 用於定義資料表結構與欄位型別，支援 Grafana 儀表板視覺化
 
 -- 如果 depression_db 資料庫不存在則建立
 CREATE DATABASE IF NOT EXISTS depression_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -43,10 +43,11 @@ CREATE TABLE student_depression (
     -- 索引
     INDEX idx_pressure_category (Academic_Pressure_Category),
     INDEX idx_degree (Degree4),
-    INDEX idx_depression (Depression)
+    INDEX idx_depression (Depression),
+    INDEX idx_pressure_value (Academic_Pressure_Value)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 建立視圖：壓力層級憂鬱比例
+-- 建立視圖：壓力層級憂鬱比例 (Panel 1)
 CREATE OR REPLACE VIEW v_depression_by_pressure AS
 SELECT 
     Academic_Pressure_Category AS pressure_level,
@@ -65,7 +66,7 @@ ORDER BY
         ELSE 4
     END;
 
--- 建立視圖：學歷層級壓力與憂鬱
+-- 建立視圖：學歷層級壓力與憂鬱 (Panel 2)
 CREATE OR REPLACE VIEW v_pressure_by_degree AS
 SELECT 
     Degree4 AS degree_level,
@@ -85,7 +86,7 @@ ORDER BY
         ELSE 5
     END;
 
--- 建立視圖：各性別壓力與憂鬱
+-- 建立視圖：各性別壓力與憂鬱 (Panel 3)
 CREATE OR REPLACE VIEW v_stats_by_gender AS
 SELECT 
     Gender AS gender,
@@ -98,15 +99,51 @@ FROM
 GROUP BY 
     gender;
 
--- Grafana 查詢範例：壓力變數值與憂鬱率
--- CREATE OR REPLACE VIEW v_pressure_value_vs_depression AS
--- SELECT
---     FLOOR(Academic_Pressure_Value) AS pressure_value_bin,
---     COUNT(*) AS total_count,
---     ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
--- FROM
---     student_depression
--- GROUP BY
---     pressure_value_bin
--- ORDER BY
---     pressure_value_bin;
+-- 建立視圖：學業壓力與憂鬱狀態分布 (Panel 4 - 熱力圖用)
+CREATE OR REPLACE VIEW v_pressure_depression_heatmap AS
+SELECT
+    ROUND(Academic_Pressure_Value) as pressure_value_bin,
+    Depression as depression,
+    COUNT(*) as value
+FROM
+    student_depression
+GROUP BY
+    pressure_value_bin, depression
+ORDER BY
+    pressure_value_bin, depression;
+
+-- 建立視圖：學業壓力與憂鬱率關係 (可用於自訂面板)
+CREATE OR REPLACE VIEW v_pressure_value_vs_depression AS
+SELECT
+    FLOOR(Academic_Pressure_Value) AS pressure_value_bin,
+    COUNT(*) AS total_count,
+    ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
+FROM
+    student_depression
+GROUP BY
+    pressure_value_bin
+ORDER BY
+    pressure_value_bin;
+
+-- 建立視圖：學業壓力與學歷、性別交叉分析 (可用於自訂面板)
+CREATE OR REPLACE VIEW v_cross_analysis AS
+SELECT
+    Degree4 AS education,
+    Gender AS gender,
+    ROUND(AVG(Academic_Pressure_Value), 2) AS avg_pressure,
+    ROUND(STDDEV(Academic_Pressure_Value), 2) AS std_pressure,
+    ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate,
+    COUNT(*) AS sample_count
+FROM
+    student_depression
+GROUP BY
+    education, gender
+ORDER BY
+    CASE education
+        WHEN '高中及以下' THEN 1
+        WHEN '大學' THEN 2
+        WHEN '碩士' THEN 3
+        WHEN '博士' THEN 4
+        ELSE 5
+    END,
+    gender;
