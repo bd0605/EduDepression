@@ -1,0 +1,531 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學業壓力與憂鬱風險之相關性分析</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h1, h2, h3, h4 {
+            color: #333;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, monospace;
+        }
+        .red-text {
+            color: red;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>學業壓力與憂鬱風險之相關性分析</h1>
+
+    <h2>摘要</h2>
+    <p>本研究以 27 901 筆來自大學生的問卷資料為基礎，探討學業壓力（Academic Pressure）與憂鬱風險（Depression）之間的關聯性。採用描述性統計、群組比較、卡方檢定、主成分分析（PCA）以及兩種機器學習預測模型（Logistic Regression、Random Forest）。結果顯示學業壓力與憂鬱風險呈現中度正相關（r ＝ 0.475），不同壓力層級的憂鬱比例從低壓力組 19.44％、中壓力組 52.03％ 到高壓力組 81.63％；卡方檢定顯示壓力層級間差異顯著（χ² ＝ 5740.656，df ＝ 2，p ＜ 0.001）。Logistic Regression 模型準確率 73.4％、AUC 0.805，Random Forest 準確率 <span class="red-text">69.3</span>％、AUC <span class="red-text">0.750</span>；兩者均將學業壓力視為最關鍵特徵。研究建議學校針對高壓力學生配置更多心理健康資源，並發展壓力管理課程。</p>
+
+    <hr>
+
+    <h2>1 緒論</h2>
+
+    <h3>1.1 研究背景與動機</h3>
+    <ul>
+        <li>隨著競爭加劇與課業負擔提升，大學生的心理健康議題日益受到重視。學業壓力已被證實與焦慮、憂鬱等負面情緒有關，但在台灣大學生族群中的實證研究尚不足。</li>
+    </ul>
+
+    <h3>1.2 研究目的</h3>
+    <ul>
+        <li>本文旨在量化學業壓力與憂鬱風險的關聯強度，並透過統計檢定與機器學習模型，評估壓力指數對憂鬱風險的預測能力，為校園心理輔導提供決策依據。</li>
+    </ul>
+
+    <hr>
+
+    <h2>2 研究方法與資料</h2>
+
+    <h3>2.1 資料來源與樣本概況</h3>
+    <ul>
+        <li><strong>資料集來源</strong>：匿名線上問卷，最終讀取 CSV 檔 <code>/content/student_depression_dataset.csv</code>，共 27 901 筆有效樣本，18 個欄位。</li>
+        <li><strong>主要欄位</strong>：
+            <ul>
+                <li><code>Academic Pressure</code>（學業壓力，0–5）</li>
+                <li><code>Depression</code>（憂鬱風險，0 ＝無、1 ＝有）</li>
+                <li>其他數值變項：Age、CGPA、Study Satisfaction 等</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>2.2 描述性統計</h3>
+    <table>
+        <tr>
+            <th>變項</th>
+            <th>count</th>
+            <th>mean</th>
+            <th>std</th>
+            <th>min</th>
+            <th>25%</th>
+            <th>50%</th>
+            <th>75%</th>
+            <th>max</th>
+        </tr>
+        <tr>
+            <td>Age</td>
+            <td>27 609</td>
+            <td>25.82</td>
+            <td>4.91</td>
+            <td>18</td>
+            <td>21</td>
+            <td>26</td>
+            <td>30</td>
+            <td>59</td>
+        </tr>
+        <tr>
+            <td>Academic Pressure</td>
+            <td>27 901</td>
+            <td><span class="red-text">3.14</span></td>
+            <td><span class="red-text">1.38</span></td>
+            <td>0</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <td>CGPA</td>
+            <td>27 901</td>
+            <td><span class="red-text">7.66</span></td>
+            <td><span class="red-text">1.47</span></td>
+            <td>0</td>
+            <td><span class="red-text">6.29</span></td>
+            <td><span class="red-text">7.77</span></td>
+            <td><span class="red-text">8.92</span></td>
+            <td>10</td>
+        </tr>
+        <tr>
+            <td>Study Satisfaction</td>
+            <td>27 901</td>
+            <td><span class="red-text">2.94</span></td>
+            <td><span class="red-text">1.36</span></td>
+            <td>0</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+        </tr>
+    </table>
+
+    <h3>2.3 資料清洗流程</h3>
+    <ul>
+        <li>保留原始副本後，將 <code>Depression</code> 類別型映射為 0/1。</li>
+        <li>填補 <code>Degree</code> 缺值並歸類為「高中及以下／大學／碩士／博士」四級序數。</li>
+        <li>刪除重複值與 <code>Academic Pressure</code>、<code>Depression</code> 之缺失，最終樣本數 27 873。</li>
+        <li>數值變項以中位數填補缺漏，並以 Z-score (|z|&lt;3) 去除離群觀測。</li>
+    </ul>
+
+    <hr>
+
+    <h2>3 探索性分析與視覺化</h2>
+
+    <h3>3.1 分層群體憂鬱風險</h3>
+    <ul>
+        <li>將學業壓力切分為「低壓力／中壓力／高壓力」三組，樣本數分別為 4 799、11 631、11 443。</li>
+        <li><strong>群組憂鬱比例</strong>：
+            <ul>
+                <li>低壓力組：19.44％</li>
+                <li>中壓力組：52.03％</li>
+                <li>高壓力組：81.63％</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>3.2 條形圖演示（示意）</h3>
+    <ul>
+        <li>左圖：三組憂鬱比例比較；右圖：學業壓力連續值五等分後之憂鬱比例。</li>
+        <li>由圖可見壓力越高，憂鬱風險明顯攀升。</li>
+    </ul>
+
+    <h3><span class="red-text">3.3 資料視覺化整合系統（XAMPP + MySQL + Grafana）</span></h3>
+    <p><span class="red-text">本研究成功實現完整的資料視覺化整合系統，將 Python 分析結果透過 MySQL 資料庫串接至 Grafana 視覺化平台，形成三層架構的動態監控系統：</span></p>
+
+    <h4><span class="red-text">(1) 系統架構與資料流</span></h4>
+    <ul>
+        <li><strong>資料前處理層</strong>：Python 資料科學生態系（pandas, scikit-learn）
+            <ul>
+                <li>特徵工程、模型訓練與預測結果產出</li>
+                <li>透過模組化設計支援持續資料更新與重新分析</li>
+            </ul>
+        </li>
+        <li><strong>資料持久層</strong>：MySQL 關聯式資料庫（XAMPP, port: 3306）
+            <ul>
+                <li>集中存儲多維度分析結果與原始資料</li>
+                <li>支援索引優化與複雜查詢，確保視覺化效能</li>
+            </ul>
+        </li>
+        <li><strong>視覺化展示層</strong>：Grafana 儀表板（port: 3000）
+            <ul>
+                <li>基於資料庫查詢建立即時更新的互動式圖表</li>
+                <li>支援多維度篩選與下鑽分析</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4><span class="red-text">(2) 資料流轉與自動化</span></h4>
+    <p><span class="red-text">整體系統採用單向資料流設計，確保分析結果的一致性與可追溯性：</span></p>
+    <pre>
+┌───────────────┐     ┌───────────────┐     ┌───────────────┐
+│   Python      │     │    MySQL      │     │   Grafana     │
+│  分析環境     │ ──> │   資料庫      │ ──> │  視覺化平台   │
+└───────────────┘     └───────────────┘     └───────────────┘
+      │                      │                     │
+   資料清洗              資料持久化             互動式展示
+   特徵工程              預計算視圖             多維度篩選
+   模型訓練              索引優化              警報機制
+   預測評估              查詢加速              分享功能
+    </pre>
+    <p><span class="red-text">資料庫寫入採用完全自動化方式，透過 SQLAlchemy ORM 實現：</span></p>
+    <pre><code># 自動化資料庫寫入流程
+from sqlalchemy import create_engine, text
+
+# 1. 建立資料庫連線
+engine = create_engine("mysql+pymysql://root@localhost:3306/depression_db?charset=utf8mb4")
+
+# 2. 自動建立資料表結構（若不存在）
+with open('db/create_table.sql', 'r') as sql_file:
+    with engine.connect() as conn:
+        conn.execute(text(sql_file.read()))
+        conn.commit()
+
+# 3. 匯出資料至資料庫
+df.to_sql('student_depression', con=engine, if_exists='replace', index=False)
+    </code></pre>
+
+    <h4><span class="red-text">(3) 視覺化圖表與應用</span></h4>
+    <p><span class="red-text">系統整合四種核心視覺化圖表，各自針對不同分析維度：</span></p>
+    <table>
+        <tr>
+            <th><span class="red-text">視覺化類型</span></th>
+            <th><span class="red-text">分析目標</span></th>
+            <th><span class="red-text">技術實現</span></th>
+            <th><span class="red-text">應用場景</span></th>
+        </tr>
+        <tr>
+            <td><span class="red-text"><strong>壓力層級條形圖</strong></span></td>
+            <td><span class="red-text">呈現三組壓力層級的憂鬱比例對比</span></td>
+            <td><span class="red-text">SQL + Grafana Bar Gauge</span></td>
+            <td><span class="red-text">快速識別高風險群體</span></td>
+        </tr>
+        <tr>
+            <td><span class="red-text"><strong>壓力-憂鬱熱力圖</strong></span></td>
+            <td><span class="red-text">展示壓力值與憂鬱狀態的二維分布</span></td>
+            <td><span class="red-text">SQL + Grafana Heatmap</span></td>
+            <td><span class="red-text">識別臨界閾值</span></td>
+        </tr>
+        <tr>
+            <td><span class="red-text"><strong>學歷-壓力-憂鬱線圖</strong></span></td>
+            <td><span class="red-text">比較不同學歷層級的壓力與憂鬱關係</span></td>
+            <td><span class="red-text">SQL + Grafana Time Series</span></td>
+            <td><span class="red-text">差異化干預策略</span></td>
+        </tr>
+        <tr>
+            <td><span class="red-text"><strong>性別統計表格</strong></span></td>
+            <td><span class="red-text">展示不同性別的壓力與憂鬱指標</span></td>
+            <td><span class="red-text">SQL + Grafana Table</span></td>
+            <td><span class="red-text">群體差異分析</span></td>
+        </tr>
+    </table>
+    <p><span class="red-text">視覺化部分特別針對校園心理健康監測設計，支援：</span></p>
+    <ol>
+        <li><strong>下鑽分析</strong>：從整體趨勢到個體層級的多層次探索</li>
+        <li><strong>警報機制</strong>：當憂鬱比例超過設定閾值時自動通知</li>
+        <li><strong>互動式篩選</strong>：支援多維度條件篩選，如學歷、性別等</li>
+        <li><strong>定期更新</strong>：支援新資料導入後的自動更新視圖</li>
+    </ol>
+
+    <h4><span class="red-text">(4) 資料庫設計與優化</span></h4>
+    <p><span class="red-text">為提升系統效能與擴展性，資料庫設計包含：</span></p>
+    <ul>
+        <li><strong>合理的索引策略</strong>：
+            <pre><code>-- 建立關鍵查詢欄位的索引
+CREATE INDEX idx_pressure_category ON student_depression(Academic_Pressure_Category);
+CREATE INDEX idx_degree ON student_depression(Degree4);
+CREATE INDEX idx_depression ON student_depression(Depression);
+            </code></pre>
+        </li>
+        <li><strong>預計算統計視圖</strong>：
+            <pre><code>-- 創建常用統計視圖，減少重複計算
+CREATE OR REPLACE VIEW v_depression_by_pressure AS
+SELECT
+    Academic_Pressure_Category AS pressure_level,
+    COUNT(*) AS total_count,
+    SUM(Depression) AS depression_count,
+    ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
+FROM student_depression
+GROUP BY pressure_level
+ORDER BY CASE pressure_level
+    WHEN '低壓力' THEN 1
+    WHEN '中壓力' THEN 2
+    WHEN '高壓力' THEN 3
+    ELSE 4 END;
+            </code></pre>
+        </li>
+    </ul>
+
+    <h4><span class="red-text">(5) 實際貢獻與價值</span></h4>
+    <p><span class="red-text">此整合系統為校園心理健康監測提供多重價值：</span></p>
+    <ol>
+        <li><strong>及早預警</strong>：透過視覺化儀表板快速識別高風險學生群體，促進及早干預</li>
+        <li><strong>資源分配</strong>：依據實證數據最佳化心理健康資源配置</li>
+        <li><strong>長期追蹤</strong>：支援縱向資料分析，觀察干預措施的長期效果</li>
+        <li><strong>跨領域協作</strong>：心理輔導人員與資料分析師的橋樑</li>
+        <li><strong>標準化工具</strong>：可套用至不同學校或機構的心理健康監測</li>
+    </ol>
+
+    <hr>
+
+    <h2>4 推論性分析</h2>
+
+    <h3>4.1 卡方檢定</h3>
+    <table>
+        <tr>
+            <th>組別</th>
+            <th>有憂鬱 (1)</th>
+            <th>無憂鬱 (0)</th>
+        </tr>
+        <tr>
+            <td>低壓力</td>
+            <td>933</td>
+            <td>3 866</td>
+        </tr>
+        <tr>
+            <td>中壓力</td>
+            <td>6 052</td>
+            <td>5 579</td>
+        </tr>
+        <tr>
+            <td>高壓力</td>
+            <td>9 341</td>
+            <td>2 102</td>
+        </tr>
+    </table>
+    <ul>
+        <li>卡方值 χ² ＝ 5 740.656，df ＝ 2，p ＜ 0.001</li>
+        <li><strong>結論</strong>：不同壓力層級間憂鬱風險差異顯著。</li>
+    </ul>
+
+    <h3>4.2 主成分分析（PCA）</h3>
+    <ul>
+        <li>PC1 解釋變異比例 73.7％。</li>
+        <li>前五大載荷量排序：Age (0.999)、Academic Pressure (0.026)、degree_ord4 (0.017)、Study Satisfaction (0.003)…</li>
+        <li>學業壓力在 PC1 中排名第 2，顯示其對整體變異的貢獻度具次要影響力。</li>
+    </ul>
+
+    <h3>4.3 與其他變項相關性</h3>
+    <table>
+        <tr>
+            <th>相關對象</th>
+            <th>Academic Pressure_Value</th>
+        </tr>
+        <tr>
+            <td><span class="red-text">Work/Study Hours</span></td>
+            <td><span class="red-text">0.208</span></td>
+        </tr>
+        <tr>
+            <td>CGPA</td>
+            <td><span class="red-text">0.022</span></td>
+        </tr>
+        <tr>
+            <td>Age</td>
+            <td><span class="red-text">-0.225</span></td>
+        </tr>
+        <tr>
+            <td>Study Satisfaction</td>
+            <td><span class="red-text">-0.168</span></td>
+        </tr>
+    </table>
+    <p><span class="red-text">顯示學業壓力與工作/學習時數呈正相關，與年齡和學習滿意度呈負相關，與 CGPA 的相關性較弱。</span></p>
+
+    <hr>
+
+    <h2>5 預測模型與比較</h2>
+
+    <h3>5.1 Logistic Regression</h3>
+    <ul>
+        <li>準確率 73.4％、AUC 0.805</li>
+        <li><strong>混淆矩陣</strong>：
+            <ul>
+                <li>Precision(有憂鬱)=0.80, Recall=0.73</li>
+                <li>Precision(無憂鬱)=0.66, Recall=0.74</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>5.2 Random Forest</h3>
+    <ul>
+        <li>準確率 <span class="red-text">69.3</span>％、AUC <span class="red-text">0.750</span></li>
+    </ul>
+
+    <h3>5.3 特徵重要性</h3>
+    <p><span class="red-text">Logistic Regression 前五大特徵重要性：</span></p>
+    <ul>
+        <li><span class="red-text">Academic Pressure_Value: 1.137</span></li>
+        <li><span class="red-text">Age: 0.523</span></li>
+        <li><span class="red-text">Study Satisfaction: 0.334</span></li>
+        <li><span class="red-text">CGPA: 0.077</span></li>
+        <li><span class="red-text">Gender_Male: 0.022</span></li>
+    </ul>
+    <p><span class="red-text">Random Forest 前五大特徵重要性：</span></p>
+    <ul>
+        <li><span class="red-text">Academic Pressure_Value: 0.138</span></li>
+        <li><span class="red-text">Age: 0.030</span></li>
+        <li><span class="red-text">Study Satisfaction: 0.009</span></li>
+        <li><span class="red-text">CGPA: 0.003</span></li>
+        <li><span class="red-text">Gender_Male: 0.001</span></li>
+    </ul>
+    <ul>
+        <li>兩模型均將學業壓力列為第一重要特徵，彰顯其預測價值。</li>
+        <li>建議採用 Logistic Regression 作為初步風險篩檢工具，Random Forest 可作為穩健性驗證。</li>
+    </ul>
+
+    <hr>
+
+    <h2>6 結論與建議</h2>
+
+    <h3>6.1 主要發現</h3>
+    <ol>
+        <li>學業壓力與憂鬱風險中度正相關（r ＝ 0.475）</li>
+        <li>壓力越高，憂鬱比例從 19.44％ 直線上升至 81.63％</li>
+        <li>兩種分類模型均將學業壓力視為關鍵預測變項</li>
+    </ol>
+
+    <h3>6.2 實務建議</h3>
+    <ul>
+        <li>高壓力學生應優先安排心理諮商與壓力管理工作坊</li>
+        <li>可在學期中期設立自我壓力評估機制，及早介入</li>
+        <li>未來研究可納入社交支持、睡眠品質等交互作用變項</li>
+    </ul>
+
+    <h3>6.3 未來研究</h3>
+    <ul>
+        <li>探討多元心理健康指標如焦慮、睡眠、飲食習慣等</li>
+        <li>結合長期追蹤資料，以觀察壓力變化軌跡與憂鬱發展</li>
+    </ul>
+
+    <hr>
+
+    <h2><span class="red-text">口頭報告時間分配與重點建議（共 15 分鐘）</span></h2>
+    <table>
+        <tr>
+            <th>章節</th>
+            <th>時間</th>
+            <th>報告重點</th>
+            <th>簡報建議</th>
+        </tr>
+        <tr>
+            <td><strong>1. 緒論與動機</strong></td>
+            <td>2 分鐘</td>
+            <td>• 大學生心理健康重要性<br>• 學業壓力與憂鬱關聯缺乏實證</td>
+            <td>• 引用相關統計數據<br>• 使用簡單視覺化圖表</td>
+        </tr>
+        <tr>
+            <td><strong>2. 資料與方法</strong></td>
+            <td>2 分鐘</td>
+            <td>• 問卷資料來源與特點<br>• 變數定義與資料清洗流程</td>
+            <td>• 呈現資料探索過程<br>• 強調樣本大小與代表性</td>
+        </tr>
+        <tr>
+            <td><strong>3. 探索分析</strong></td>
+            <td>3 分鐘</td>
+            <td>• 三組壓力層級憂鬱比例差異<br>• <strong>資料視覺化整合系統展示</strong><br>• 互動式儀表板功能</td>
+            <td>• <strong>實機展示 Grafana 儀表板</strong><br>• 高亮差異最顯著的數據點</td>
+        </tr>
+        <tr>
+            <td><strong>4. 統計檢定</strong></td>
+            <td>3 分鐘</td>
+            <td>• 卡方檢定結果與解釋<br>• PCA 分析關鍵發現<br>• 相關性矩陣解讀</td>
+            <td>• 使用熱力圖呈現相關性<br>• 標示統計顯著性</td>
+        </tr>
+        <tr>
+            <td><strong>5. 預測模型</strong></td>
+            <td>3 分鐘</td>
+            <td>• 兩種模型的準確率與 AUC<br>• 特徵重要性排序<br>• 模型優劣勢比較</td>
+            <td>• 使用 ROC 曲線<br>• 特徵重要性長條圖</td>
+        </tr>
+        <tr>
+            <td><strong>6. 結論建議</strong></td>
+            <td>2 分鐘</td>
+            <td>• 學業壓力是關鍵預測因子<br>• 校園心理健康資源配置建議<br>• 未來研究方向</td>
+            <td>• 總結關鍵數據<br>• 視覺化實務建議</td>
+        </tr>
+    </table>
+    <p><span class="red-text"><strong>答問時間準備建議</strong>：針對資料視覺化整合系統，準備額外的技術細節說明，包括系統架構、資料庫設計、以及如何將此系統擴展至其他校園。特別準備回應關於系統效能與擴展性的問題。</span></p>
+
+</body>
+</html>
