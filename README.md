@@ -13,7 +13,7 @@
 ## 專案結構
 
 ```
-student-depression-analysis/
+EduDepression/
 ├── data/
 │   └── student_depression_dataset.csv # kaggle 問卷資料
 ├── db/
@@ -92,8 +92,8 @@ student-depression-analysis/
 ### 1. **克隆專案**
 
 ```bash
-git clone https://github.com/bd0605/student-depression-analysis.git
-cd student-depression-analysis
+git clone https://github.com/bd0605/EduDepression.git
+cd EduDepression
 ```
 
 ---
