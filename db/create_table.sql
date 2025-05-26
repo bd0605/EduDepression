@@ -19,7 +19,7 @@ CREATE TABLE student_depression (
   CGPA                FLOAT,
   `Study Satisfaction` FLOAT,
 
-  /* 派生欄位（含空格，一律用反引號） ----------------------------------- */
+  /* 派生欄位 ----------------------------------- */
   `Academic Pressure_Value`      FLOAT,
   `Academic Pressure_Category`   VARCHAR(50),
 
@@ -36,7 +36,7 @@ CREATE TABLE student_depression (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
              ON UPDATE CURRENT_TIMESTAMP,
 
-  /* 索引（也記得用反引號） ------------------------------------------- */
+  /* 索引 ------------------------------------------- */
   INDEX idx_pressure_category (`Academic Pressure_Category`),
   INDEX idx_degree            (Degree4),
   INDEX idx_depression        (Depression),
