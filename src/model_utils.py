@@ -20,6 +20,7 @@ from sklearn.metrics import (
     roc_curve
 )
 from sklearn.inspection import permutation_importance
+from sklearn.decomposition import PCA
 
 def prepare_features(df, features=None, target='Depression', test_size=0.2, random_state=42):
     """
@@ -257,6 +258,41 @@ def check_correlation_with_depression(df, target='Depression'):
     # 排序並返回
     return corr.sort_values(ascending=False)
 
+def perform_pca_analysis(df, features_all):
+    """
+    執行 PCA 主成分分析
+
+    Args:
+        df (pandas.DataFrame): 包含特徵的資料框
+        features_all (list): 用於 PCA 分析的特徵列表
+
+    Returns:
+        dict: 包含 PCA 分析結果的字典
+            - explained_variance_ratio_pc1: PC1 解釋變異比例
+            - pc1_loadings: PC1 載荷量排序
+            - academic_pressure_rank_pc1: 學業壓力在 PC1 中的重要性排名
+    """
+    pca = PCA(n_components=min(5, len(features_all)))
+    pca.fit(df[features_all])
+    loadings = pd.Series(pca.components_[0], index=features_all).abs().sort_values(ascending=False)
+    
+    explained_variance_ratio_pc1 = np.round(pca.explained_variance_ratio_[0], 3)
+    academic_pressure_rank_pc1 = -1
+    if 'Academic Pressure_Value' in features_all:
+        academic_pressure_rank_pc1 = list(loadings.index).index('Academic Pressure_Value') + 1
+
+    print("\nPCA分析（主成分分析）:")
+    print(f"PC1 解釋變異比例：{explained_variance_ratio_pc1}")
+    print("PC1 載荷量排序（前5項）：\n", loadings.head(5).round(3))
+    if 'Academic Pressure_Value' in features_all:
+        print(f"→ 學業壓力在PC1中的重要性排名：{academic_pressure_rank_pc1}")
+    
+    return {
+        "explained_variance_ratio_pc1": explained_variance_ratio_pc1,
+        "pc1_loadings": loadings,
+        "academic_pressure_rank_pc1": academic_pressure_rank_pc1
+    }
+
 def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, random_state=42):
     """
     整合式模型訓練與評估流程
@@ -276,6 +312,7 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
             - rf_results: Random Forest 評估結果
             - lr_importance: Logistic Regression 特徵重要性
             - rf_importance: Random Forest 特徵重要性
+            - pca_results: PCA 分析結果
     """
     # 準備資料
     if features is None:
@@ -296,6 +333,9 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
     corr_with_target = check_correlation_with_depression(df, target)
     print("\n各特徵與憂鬱風險的相關性:")
     print(corr_with_target.head(10))
+    
+    # 執行 PCA 分析
+    pca_results = perform_pca_analysis(df, features)
     
     # 分割資料集並標準化
     X_train, X_test, y_train, y_test, scaler = prepare_features(
@@ -345,6 +385,7 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
         "rf_importance": rf_importance,
         "ap_lr_rank": ap_lr_rank,
         "ap_rf_rank": ap_rf_rank,
+        "pca_results": pca_results,
         "features": features,
         "scaler": scaler,
         "y_train": y_train,
@@ -376,6 +417,10 @@ if __name__ == "__main__":
         print("\n模型訓練與評估成功！")
         print(f"Logistic Regression 準確率: {results['lr_results']['accuracy']:.3f}, AUC: {results['lr_results']['auc']:.3f}")
         print(f"Random Forest 準確率: {results['rf_results']['accuracy']:.3f}, AUC: {results['rf_results']['auc']:.3f}")
+        if results.get('pca_results'):
+            print(f"PCA PC1 解釋變異: {results['pca_results']['explained_variance_ratio_pc1']}")
+            if results['pca_results'].get('academic_pressure_rank_pc1', -1) != -1:
+                print(f"學業壓力在 PCA PC1 排名: {results['pca_results']['academic_pressure_rank_pc1']}")
         
         # 交叉驗證比較
         X = df[features]
