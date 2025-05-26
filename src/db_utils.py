@@ -193,12 +193,14 @@ def get_depression_by_pressure(mysql_uri=None):
     # SQL 查詢語句：計算各壓力層級的憂鬱比例
     query = """
     SELECT 
-        Academic_Pressure_Category AS pressure_level,
+        `Academic Pressure_Category` AS pressure_level,
         COUNT(*) AS total_count,
         SUM(Depression) AS depression_count,
         ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
     FROM 
         student_depression
+    WHERE 
+        `Academic Pressure_Category` IS NOT NULL
     GROUP BY 
         pressure_level
     ORDER BY 
@@ -228,10 +230,12 @@ def get_pressure_by_degree(mysql_uri=None):
     SELECT 
         Degree4 AS degree_level,
         COUNT(*) AS total_count,
-        ROUND(AVG(Academic_Pressure_Value), 2) AS avg_pressure,
+        ROUND(AVG(`Academic Pressure_Value`), 2) AS avg_pressure,
         ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
     FROM 
         student_depression
+    WHERE 
+        Degree4 IS NOT NULL AND `Academic Pressure_Value` IS NOT NULL
     GROUP BY 
         degree_level
     ORDER BY 
@@ -247,32 +251,7 @@ def get_pressure_by_degree(mysql_uri=None):
     # 執行查詢
     return import_from_mysql(query, mysql_uri)
 
-def get_pressure_stats_by_gender(mysql_uri=None):
-    """
-    取得各性別的學業壓力統計，用於 Grafana 視覺化
 
-    Args:
-        mysql_uri (str, optional): MySQL 連接字串，若為 None，則從 get_engine 取得。
-
-    Returns:
-        pandas.DataFrame: 查詢結果資料框，包含性別、學業壓力均值與標準差
-    """
-    # SQL 查詢語句：計算各性別的學業壓力統計
-    query = """
-    SELECT 
-        Gender AS gender,
-        COUNT(*) AS total_count,
-        ROUND(AVG(Academic_Pressure_Value), 2) AS avg_pressure,
-        ROUND(STDDEV(Academic_Pressure_Value), 2) AS std_pressure,
-        ROUND(SUM(Depression) / COUNT(*), 4) AS depression_rate
-    FROM 
-        student_depression
-    GROUP BY 
-        gender;
-    """
-    
-    # 執行查詢
-    return import_from_mysql(query, mysql_uri)
 
 # 當直接執行此模組時進行測試
 if __name__ == "__main__":
@@ -306,9 +285,6 @@ if __name__ == "__main__":
             
             print("\n各學歷層級的學業壓力:")
             print(get_pressure_by_degree())
-            
-            print("\n各性別的學業壓力統計:")
-            print(get_pressure_stats_by_gender())
         else:
             print("資料匯出測試失敗！")
     except Exception as e:

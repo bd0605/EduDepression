@@ -49,8 +49,6 @@
 - `student_depression` 表 - 主要資料表
 - `v_depression_by_pressure` 視圖 - 壓力層級憂鬱比例
 - `v_pressure_by_degree` 視圖 - 學歷層級壓力與憂鬱
-- `v_stats_by_gender` 視圖 - 各性別壓力與憂鬱
-- `v_pressure_depression_heatmap` 視圖 - 熱力圖資料
 - `v_pressure_value_vs_depression` 視圖 - 壓力值與憂鬱率
 - `v_cross_analysis` 視圖 - 交叉分析
 
@@ -133,7 +131,7 @@ sudo systemctl start grafana-server
 4. 點選「Add data source」
 5. 選擇「MySQL」
 6. 填寫以下資訊：
-   - Name: MySQL
+   - Name: mysql-EduDepression
    - Host: localhost:3306
    - Database: depression_db
    - User: root
@@ -150,7 +148,7 @@ sudo systemctl start grafana-server
 
 1. 點選左側選單「Create」（+圖示）→「Import」
 2. 選擇「Upload .json file」
-3. 上傳 `docs/grafana_dashboard.json` 檔案
+3. 上傳 `grafana/dashboard.json` 檔案
 4. 匯入設定：
    - Name: 學業壓力與憂鬱風險分析儀表板（可自訂）
    - Folder: General（可選擇其他資料夾）
@@ -166,29 +164,17 @@ sudo systemctl start grafana-server
 
 匯入完成後，儀表板將顯示以下視覺化內容：
 
-1. **不同學業壓力水平的憂鬱比例**（左上）：
+1. **不同學業壓力水平的憂鬱比例**：
 
    - 條形圖顯示低、中、高三個壓力層級的憂鬱比例
    - Y 軸以百分比形式呈現（0-100%）
    - 使用 `v_depression_by_pressure` 視圖資料
 
-2. **各學歷層級的學業壓力與憂鬱比例**（右上）：
+2. **各學歷層級的學業壓力與憂鬱比例**：
 
-   - 線圖同時顯示各學歷層級的平均壓力值（左 Y 軸）與憂鬱比例（右 Y 軸）
+   - 條形圖同時顯示各學歷層級的平均壓力值與憂鬱比例
    - X 軸按照學歷由低到高排序：高中及以下、大學、碩士、博士
    - 使用 `v_pressure_by_degree` 視圖資料
-
-3. **各性別學業壓力與憂鬱風險統計**（左下）：
-
-   - 表格呈現各性別的樣本數、平均壓力值、壓力標準差與憂鬱比例
-   - 憂鬱比例欄位按閾值著色：<40% 綠色，40-60% 黃色，>60% 紅色
-   - 使用 `v_stats_by_gender` 視圖資料
-
-4. **學業壓力 vs 憂鬱狀態熱力圖**（右下）：
-   - 熱力圖展示不同壓力值與憂鬱狀態的分布情況
-   - X 軸為壓力值（四捨五入），Y 軸為憂鬱狀態（0 或 1）
-   - 顏色強度表示該組合的樣本數量
-   - 直接查詢 `student_depression` 表
 
 ### 2. 互動功能使用
 

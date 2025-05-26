@@ -180,7 +180,7 @@ python run_analysis.py --to-mysql
 2. 啟動 Grafana 服務
 3. 訪問 Grafana 網頁界面（預設 `http://localhost:3000/`）
 4. 新增 MySQL 資料來源
-5. 匯入 `docs/grafana_dashboard.json` 設定檔
+5. 匯入 `grafana/dashboard.json` 設定檔
 6. 即可使用預先設計的視覺化儀表板
 
 詳細設定步驟請參考 `docs/mysql_grafana_guide.md`。

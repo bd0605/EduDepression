@@ -4,7 +4,7 @@
   "schemaVersion": 31,
   "version": 1,
   "style": "dark",
-  "tags": ["education","depression","academic"],
+  "tags": ["education", "depression", "academic"],
   "time": { "from": "now-6h", "to": "now" },
   "panels": [
     {
@@ -72,52 +72,6 @@
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT degree_level AS metric,\n       '憂鬱率' AS series,\n       depression_rate * 100 AS value\nFROM v_pressure_by_degree\nORDER BY CASE degree_level\n  WHEN '高中及以下' THEN 1\n  WHEN '大學' THEN 2\n  WHEN '碩士' THEN 3\n  WHEN '博士' THEN 4\n  ELSE 5 END;"
-        }
-      ]
-    },
-    {
-      "type": "table",
-      "title": "各性別學業壓力與憂鬱風險統計",
-      "datasource": { "uid": "mysql-EduDepression", "type": "mysql" },
-      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
-      "fieldConfig": {
-        "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 40 },
-              { "color": "red", "value": 60 }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "depression_rate" },
-            "properties": [{ "id": "unit", "value": "percent" }]
-          }
-        ]
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT gender,\n       total_count,\n       avg_pressure,\n       std_pressure,\n       depression_rate * 100 AS depression_rate\nFROM v_stats_by_gender\nORDER BY gender;"
-        }
-      ]
-    },
-    {
-      "type": "heatmap",
-      "title": "學業壓力 vs 憂鬱狀態熱力圖",
-      "datasource": { "uid": "mysql-EduDepression", "type": "mysql" },
-      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT ROUND(`Academic Pressure_Value`) AS metric,\n       Depression                    AS series,\n       COUNT(*)                      AS value\nFROM student_depression\nGROUP BY metric, Depression\nORDER BY metric, Depression;"
         }
       ]
     }
