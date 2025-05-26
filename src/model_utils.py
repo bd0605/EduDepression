@@ -22,6 +22,7 @@ from sklearn.metrics import (
 from sklearn.inspection import permutation_importance
 from sklearn.decomposition import PCA
 
+
 def prepare_features(df, features=None, target='Depression', test_size=0.2, random_state=42):
     """
     準備模型訓練與測試的特徵集與標籤集
@@ -45,24 +46,25 @@ def prepare_features(df, features=None, target='Depression', test_size=0.2, rand
     if features is None:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         features = [col for col in num_cols if col != target]
-    
+
     # 準備特徵與標籤
     X = df[features]
     y = df[target]
-    
+
     # 標準化特徵
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    
+
     # 分割資料集
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y, test_size=test_size, random_state=random_state, stratify=y
     )
-    
+
     return X_train, X_test, y_train, y_test, scaler
 
+
 def train_logistic_regression(X_train, y_train, class_weight='balanced', solver='liblinear',
-                           max_iter=5000, random_state=42):
+                              max_iter=5000, random_state=42):
     """
     訓練 Logistic Regression 模型
 
@@ -85,11 +87,12 @@ def train_logistic_regression(X_train, y_train, class_weight='balanced', solver=
         random_state=random_state
     )
     model.fit(X_train, y_train)
-    
+
     return model
 
+
 def train_random_forest(X_train, y_train, n_estimators=100, max_depth=None,
-                     class_weight='balanced', random_state=42, n_jobs=-1):
+                        class_weight='balanced', random_state=42, n_jobs=-1):
     """
     訓練 Random Forest 模型
 
@@ -114,8 +117,9 @@ def train_random_forest(X_train, y_train, n_estimators=100, max_depth=None,
         n_jobs=n_jobs
     )
     model.fit(X_train, y_train)
-    
+
     return model
+
 
 def evaluate_model(model, X_test, y_test, model_name="Model"):
     """
@@ -138,30 +142,31 @@ def evaluate_model(model, X_test, y_test, model_name="Model"):
     """
     # 預測結果
     y_pred = model.predict(X_test)
-    
+
     # 嘗試取得預測機率，不同模型有不同方式
     try:
         y_proba = model.predict_proba(X_test)[:, 1]
     except:
         y_proba = y_pred  # 若無法獲得機率，則使用預測標籤
-    
+
     # 計算效能指標
     acc = accuracy_score(y_test, y_pred)
-    
+
     try:
         auc = roc_auc_score(y_test, y_proba)
     except:
         auc = None  # 若無法計算 AUC，則設為 None
-    
+
     cm = confusion_matrix(y_test, y_pred)
-    cr = classification_report(y_test, y_pred, zero_division=0, output_dict=True)
-    
+    cr = classification_report(
+        y_test, y_pred, zero_division=0, output_dict=True)
+
     # 輸出效能摘要
     print(f"\n{model_name} 評估結果:")
     print(f"準確率: {acc:.3f}")
     if auc is not None:
         print(f"AUC: {auc:.3f}")
-    
+
     # 返回效能指標
     return {
         "y_pred": y_pred,
@@ -171,6 +176,7 @@ def evaluate_model(model, X_test, y_test, model_name="Model"):
         "confusion_matrix": cm,
         "classification_report": cr
     }
+
 
 def get_feature_importance(model, X, y, features, model_type="logistic_regression"):
     """
@@ -199,9 +205,10 @@ def get_feature_importance(model, X, y, features, model_type="logistic_regressio
         importance = pd.Series(result.importances_mean, index=features)
     else:
         raise ValueError(f"不支援的模型類型: {model_type}")
-    
+
     # 排序並返回
     return importance.sort_values(ascending=False)
+
 
 def cross_validate_models(X, y, features, cv=5, random_state=42):
     """
@@ -220,23 +227,28 @@ def cross_validate_models(X, y, features, cv=5, random_state=42):
             - random_forest: Random Forest 的交叉驗證分數
     """
     # 建立模型
-    lr = LogisticRegression(class_weight='balanced', solver='liblinear', max_iter=5000, random_state=random_state)
-    rf = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=random_state)
-    
+    lr = LogisticRegression(class_weight='balanced', solver='liblinear',
+                            max_iter=5000, random_state=random_state)
+    rf = RandomForestClassifier(
+        n_estimators=100, class_weight='balanced', random_state=random_state)
+
     # 進行交叉驗證
     lr_scores = cross_val_score(lr, X, y, cv=cv, scoring='accuracy')
     rf_scores = cross_val_score(rf, X, y, cv=cv, scoring='accuracy')
-    
+
     # 輸出結果
     print("\n交叉驗證結果:")
-    print(f"Logistic Regression: {lr_scores.mean():.3f} (+/- {lr_scores.std()*2:.3f})")
-    print(f"Random Forest: {rf_scores.mean():.3f} (+/- {rf_scores.std()*2:.3f})")
-    
+    print(
+        f"Logistic Regression: {lr_scores.mean():.3f} (+/- {lr_scores.std()*2:.3f})")
+    print(
+        f"Random Forest: {rf_scores.mean():.3f} (+/- {rf_scores.std()*2:.3f})")
+
     # 返回結果
     return {
         "logistic_regression": lr_scores,
         "random_forest": rf_scores
     }
+
 
 def check_correlation_with_depression(df, target='Depression'):
     """
@@ -251,12 +263,13 @@ def check_correlation_with_depression(df, target='Depression'):
     """
     # 選擇數值型欄位
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    
+
     # 計算相關係數
     corr = df[num_cols].corrwith(df[target]).drop(target, errors='ignore')
-    
+
     # 排序並返回
     return corr.sort_values(ascending=False)
+
 
 def perform_pca_analysis(df, features_all):
     """
@@ -274,24 +287,28 @@ def perform_pca_analysis(df, features_all):
     """
     pca = PCA(n_components=min(5, len(features_all)))
     pca.fit(df[features_all])
-    loadings = pd.Series(pca.components_[0], index=features_all).abs().sort_values(ascending=False)
-    
-    explained_variance_ratio_pc1 = np.round(pca.explained_variance_ratio_[0], 3)
+    loadings = pd.Series(pca.components_[0], index=features_all).abs(
+    ).sort_values(ascending=False)
+
+    explained_variance_ratio_pc1 = np.round(
+        pca.explained_variance_ratio_[0], 3)
     academic_pressure_rank_pc1 = -1
     if 'Academic Pressure_Value' in features_all:
-        academic_pressure_rank_pc1 = list(loadings.index).index('Academic Pressure_Value') + 1
+        academic_pressure_rank_pc1 = list(
+            loadings.index).index('Academic Pressure_Value') + 1
 
     print("\nPCA分析（主成分分析）:")
     print(f"PC1 解釋變異比例：{explained_variance_ratio_pc1}")
     print("PC1 載荷量排序（前5項）：\n", loadings.head(5).round(3))
     if 'Academic Pressure_Value' in features_all:
         print(f"→ 學業壓力在PC1中的重要性排名：{academic_pressure_rank_pc1}")
-    
+
     return {
         "explained_variance_ratio_pc1": explained_variance_ratio_pc1,
         "pc1_loadings": loadings,
         "academic_pressure_rank_pc1": academic_pressure_rank_pc1
     }
+
 
 def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, random_state=42):
     """
@@ -328,53 +345,58 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
         for col in gender_cols:
             if col not in features:
                 features.append(col)
-    
+
     # 檢查相關性
     corr_with_target = check_correlation_with_depression(df, target)
     print("\n各特徵與憂鬱風險的相關性:")
     print(corr_with_target.head(10))
-    
+
     # 執行 PCA 分析
     pca_results = perform_pca_analysis(df, features)
-    
+
     # 分割資料集並標準化
     X_train, X_test, y_train, y_test, scaler = prepare_features(
         df, features, target, test_size, random_state
     )
-    
+
     # 訓練 Logistic Regression 模型
-    lr_model = train_logistic_regression(X_train, y_train, random_state=random_state)
-    lr_results = evaluate_model(lr_model, X_test, y_test, "Logistic Regression")
-    
-    # 訓練 Random Forest 模型
-    rf_model = train_random_forest(X_train, y_train, random_state=random_state)
-    rf_results = evaluate_model(rf_model, X_test, y_test, "Random Forest")
-    
+    lr_model = train_logistic_regression(
+        X_train, y_train, random_state=random_state)
+    lr_results = evaluate_model(
+        lr_model, X_test, y_test, "Logistic Regression")
+
     # 計算特徵重要性
     lr_importance = get_feature_importance(
         lr_model, X_test, y_test, features, "logistic_regression"
     )
     print("\nLogistic Regression 特徵重要性 (Top 5):")
     print(lr_importance.head(5))
-    
+
+    # 訓練 Random Forest 模型
+    rf_model = train_random_forest(X_train, y_train, random_state=random_state)
+    rf_results = evaluate_model(rf_model, X_test, y_test, "Random Forest")
+
+    # 計算特徵重要性
     rf_importance = get_feature_importance(
         rf_model, X_test, y_test, features, "random_forest"
     )
     print("\nRandom Forest 特徵重要性 (Top 5):")
     print(rf_importance.head(5))
-    
+
     # 檢查學業壓力在特徵重要性中的排名
     ap_lr_rank = -1
     ap_rf_rank = -1
-    
+
     if 'Academic Pressure_Value' in features:
-        ap_lr_rank = list(lr_importance.index).index('Academic Pressure_Value') + 1
-        ap_rf_rank = list(rf_importance.index).index('Academic Pressure_Value') + 1
-        
+        ap_lr_rank = list(lr_importance.index).index(
+            'Academic Pressure_Value') + 1
+        ap_rf_rank = list(rf_importance.index).index(
+            'Academic Pressure_Value') + 1
+
         print(f"\n學業壓力在模型中的重要性排名:")
         print(f"- Logistic Regression: 第 {ap_lr_rank} 名")
         print(f"- Random Forest: 第 {ap_rf_rank} 名")
-    
+
     # 返回結果
     return {
         "lr_model": lr_model,
@@ -392,43 +414,50 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
         "y_test":  y_test
     }
 
+
 # 當直接執行此模組時進行測試
 if __name__ == "__main__":
     import os
     from preprocess import preprocess
-    
+
     # 假設資料在標準路徑
-    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "student_depression_dataset.csv")
-    
+    data_path = os.path.join(os.path.dirname(os.path.dirname(
+        __file__)), "data", "student_depression_dataset.csv")
+
     try:
         # 讀取並處理資料
         df = preprocess(data_path)
-        
+
         # 指定特徵
         features = [
-            'Academic Pressure_Value', 'degree_ord4', 'Age', 
+            'Academic Pressure_Value', 'degree_ord4', 'Age',
             'CGPA', 'Study Satisfaction'
         ]
-        features.extend([col for col in df.columns if col.startswith('Gender_')])
-        
+        features.extend(
+            [col for col in df.columns if col.startswith('Gender_')])
+
         # 訓練與評估模型
         results = train_and_evaluate(df, features)
-        
+
         print("\n模型訓練與評估成功！")
-        print(f"Logistic Regression 準確率: {results['lr_results']['accuracy']:.3f}, AUC: {results['lr_results']['auc']:.3f}")
-        print(f"Random Forest 準確率: {results['rf_results']['accuracy']:.3f}, AUC: {results['rf_results']['auc']:.3f}")
+        print(
+            f"Logistic Regression 準確率: {results['lr_results']['accuracy']:.3f}, AUC: {results['lr_results']['auc']:.3f}")
+        print(
+            f"Random Forest 準確率: {results['rf_results']['accuracy']:.3f}, AUC: {results['rf_results']['auc']:.3f}")
         if results.get('pca_results'):
-            print(f"PCA PC1 解釋變異: {results['pca_results']['explained_variance_ratio_pc1']}")
+            print(
+                f"PCA PC1 解釋變異: {results['pca_results']['explained_variance_ratio_pc1']}")
             if results['pca_results'].get('academic_pressure_rank_pc1', -1) != -1:
-                print(f"學業壓力在 PCA PC1 排名: {results['pca_results']['academic_pressure_rank_pc1']}")
-        
+                print(
+                    f"學業壓力在 PCA PC1 排名: {results['pca_results']['academic_pressure_rank_pc1']}")
+
         # 交叉驗證比較
         X = df[features]
         y = df['Depression']
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
-        
+
         cross_validate_models(X_scaled, y, features)
-        
+
     except Exception as e:
         print(f"模型訓練與評估失敗: {e}")
