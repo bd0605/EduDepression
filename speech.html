@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>學業壓力與憂鬱風險之相關性分析 - 演講稿</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Remix Icon -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#4F46E5",
+              secondary: "#7C3AED",
+              accent: "#EC4899",
+              neutral: {
+                50: "#FAFAF9",
+                100: "#F5F5F4",
+                200: "#E7E5E4",
+                300: "#D6D3D1",
+                400: "#A8A29E",
+                500: "#78716C",
+                600: "#57534E",
+                700: "#44403C",
+                800: "#292524",
+                900: "#1C1917",
+              },
+            },
+            fontFamily: {
+              sans: ["Noto Sans TC", "sans-serif"],
+            },
+            spacing: {
+              0.5: "0.125rem",
+              1.5: "0.375rem",
+              2.5: "0.625rem",
+              3.5: "0.875rem",
+              4.5: "1.125rem",
+              5.5: "1.375rem",
+            },
+            animation: {
+              "fade-in": "fadeIn 0.5s ease-out forwards",
+              "slide-up": "slideUp 0.5s ease-out forwards",
+              "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: "0" },
+                "100%": { opacity: "1" },
+              },
+              slideUp: {
+                "0%": { transform: "translateY(20px)", opacity: "0" },
+                "100%": { transform: "translateY(0)", opacity: "1" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* 自定義滾動條 */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f3f4f6;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+      }
+
+      /* 平滑滾動 */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* 章節轉場動畫 */
+      .section-transition {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      .section-visible {
+        animation: slideUp 0.5s ease-out forwards;
+      }
+
+      /* 重點標記動畫 */
+      .highlight-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      /* 進度條動畫 */
+      .progress-bar {
+        transition: width 0.3s ease-out;
+      }
+
+      /* 隱藏彩蛋樣式 */
+      .easter-egg {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        opacity: 0.3;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .easter-egg:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
+
+      .easter-egg-message {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+        animation: fadeIn 0.5s ease-out;
+      }
+      @keyframes slideUp {
+        0% {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-neutral-50 text-neutral-800 font-sans">
+    <!-- 進度條 -->
+    <div class="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
+      <div
+        id="progress-bar"
+        class="progress-bar h-full bg-gradient-to-r from-primary to-secondary"
+        style="width: 0%"
+      ></div>
+    </div>
+
+    <!-- 導航欄 -->
+    <nav
+      class="fixed top-1 left-0 w-full bg-white/90 backdrop-blur-sm shadow-sm z-40"
+    >
+      <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+          <h1 class="text-lg font-bold text-primary">演講稿</h1>
+          <button
+            id="menu-toggle"
+            class="text-2xl text-neutral-600 hover:text-primary transition-colors"
+          >
+            <i class="ri-menu-3-line"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 側邊選單 -->
+    <aside
+      id="sidebar"
+      class="fixed top-0 right-0 h-full w-72 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-y-auto"
+    >
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-neutral-800">章節導航</h2>
+          <button
+            id="close-menu"
+            class="text-2xl text-neutral-600 hover:text-primary transition-colors"
+          >
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+        <nav id="section-nav" class="space-y-2">
+          <!-- 動態生成章節連結 -->
+        </nav>
+      </div>
+    </aside>
+
+    <!-- 主要內容 -->
+    <main class="container mx-auto px-4 pt-20 pb-24">
+      <!-- 標題區塊 -->
+      <section class="mb-8 text-center section-transition">
+        <h1
+          class="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-4 leading-tight"
+        >
+          學業壓力與憂鬱風險之相關性分析
+        </h1>
+        <p class="text-neutral-600 text-sm">總時間：15分鐘 | Q&A：2-3分鐘</p>
+      </section>
+
+      <!-- Slide 1: 封面 -->
+      <section data-section="封面" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >1</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">封面</h2>
+            <span class="ml-auto text-sm text-neutral-500">10秒</span>
+          </div>
+          <div class="prose prose-sm max-w-none">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">開場白：</strong>
+              各位老師、各位同學，大家好！今天我們要報告的是「學業壓力與憂鬱風險之相關性分析」。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 2-3: 摘要 -->
+      <section data-section="摘要" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >2-3</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">摘要</h2>
+            <span class="ml-auto text-sm text-neutral-500">1分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <div
+              class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4"
+            >
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">核心發現：</strong> 我們分析了近
+                <span class="font-bold text-2xl text-primary">2.8 萬名</span
+                >大學生問卷資料，證實「學業壓力越大，憂鬱風險越高」。這兩者呈中度正相關
+                (r =
+                <span class="font-bold text-xl text-secondary">0.475</span>)。
+              </p>
+            </div>
+
+            <div class="bg-accent/10 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-accent">數據支持：</strong>
+                你看，壓力低的時候只有
+                <span class="font-bold text-xl text-green-600">19.44%</span>
+                的人有憂鬱風險，但壓力高時，這個比例飆升到
+                <span class="font-bold text-xl text-red-600">81.63%</span
+                >！這個差異非常顯著。
+              </p>
+            </div>
+
+            <div class="space-y-3">
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">研究方法：</strong>
+                我們用了描述性統計、卡方檢定，以及兩種機器學習模型來預測（Logistic
+                Regression 準確率
+                <span class="font-semibold text-primary">73.4%</span>，AUC
+                <span class="font-semibold text-primary">0.805</span>；Random
+                Forest 準確率
+                <span class="font-semibold text-secondary">69.3%</span>，AUC
+                <span class="font-semibold text-secondary">0.750</span>）。
+              </p>
+
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">實用工具：</strong> 我們還整合了
+                Python、MySQL 和
+                Grafana，建立了一套動態監控系統，學校可以即時看到高風險學生。
+              </p>
+
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">最終建議：</strong>
+                根據分析結果，我們建議學校針對高壓力學生提供相關協助。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4-6: 緒論 -->
+      <section data-section="緒論" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >4-6</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">緒論</h2>
+            <span class="ml-auto text-sm text-neutral-500">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">研究背景與動機：</strong>
+              隨著學業競爭加劇，大學生面臨的壓力日益增加，這對心理健康可能產生深遠影響，尤其是憂鬱風險。台灣目前對這塊的實證研究還不夠。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">研究目的：</strong>
+              本研究旨在探討學業壓力與憂鬱風險之間的關聯性，並建立預測模型，最終提供一套資料視覺化整合系統，為學校提供早期預警機制與介入策略。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 7-10: 文獻回顧 -->
+      <section data-section="文獻回顧" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >7-10</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">文獻回顧</h2>
+            <span class="ml-auto text-sm text-neutral-500">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">過去研究：</strong>
+              學術壓力、課業負擔、考試焦慮等因素已被證明與學生心理健康問題相關。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">本研究貢獻：</strong>
+              我們結合了多面向資料，使用機器學習模型，並建立即時監控系統，希望能填補這塊的空白。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 11-15: 研究方法 -->
+      <section data-section="研究方法" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >11-15</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              研究方法 - 資料來源與樣本
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">1.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">資料來源：</strong> 我們的資料來自
+              Kaggle 的匿名大學生問卷，涵蓋了學業壓力、憂鬱風險等關鍵變項。
+            </p>
+            <div class="bg-neutral-100 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">資料清洗：</strong>
+                我們做了嚴謹的資料清洗，包括缺失值處理、重複值刪除、離群值處理，並將分類變數進行了數值化轉換。最終樣本數是
+                <span class="font-bold text-2xl text-primary">27,873 筆</span>。
+              </p>
+            </div>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">特徵工程：</strong>
+              我們將學業壓力進行了分級，並對學歷、性別等進行了 One-hot
+              編碼，讓資料更能被模型理解。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 16-18: 描述性統計 -->
+      <section data-section="描述性統計" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >16-18</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              描述性統計與相關性分析
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">1.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">基本資料：</strong>
+              (快速帶過數據表格，強調樣本數量和主要變項的分布)
+            </p>
+
+            <div
+              class="bg-gradient-to-r from-green-50 to-red-50 rounded-lg p-4"
+            >
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary">壓力與憂鬱比例：</strong>
+                我們發現學業壓力等級越高，憂鬱風險的比例就越高。
+              </p>
+              <div class="flex justify-between items-center">
+                <div class="text-center">
+                  <p class="text-sm text-neutral-600">低壓力組</p>
+                  <p class="text-3xl font-bold text-green-600">19.44%</p>
+                </div>
+                <i class="ri-arrow-right-line text-2xl text-neutral-400"></i>
+                <div class="text-center">
+                  <p class="text-sm text-neutral-600">高壓力組</p>
+                  <p class="text-3xl font-bold text-red-600">81.63%</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-primary/10 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">相關性分析：</strong>
+                學業壓力與憂鬱風險呈中度正相關 (Pearson r =
+                <span class="font-bold text-xl text-primary">0.475</span
+                >)。卡方檢定也顯示兩者間存在顯著差異 (p <
+                0.001)，這代表壓力確實會顯著影響憂鬱風險。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 19-20: 機器學習模型 -->
+      <section data-section="機器學習模型" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >19-20</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">機器學習模型</h2>
+            <span class="ml-auto text-sm text-neutral-500">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">模型選擇：</strong>
+              我們選用了兩種常用的分類模型：<span
+                class="font-semibold text-primary"
+                >Logistic Regression (羅吉斯迴歸)</span
+              >
+              和
+              <span class="font-semibold text-secondary"
+                >Random Forest (隨機森林)</span
+              >。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">模型訓練：</strong>
+              資料經過標準化處理後，我們以 80% 作為訓練集、20%
+              作為測試集進行模型訓練。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">模型評估：</strong>
+              我們主要關注準確率 (Accuracy)、精確度 (Precision)、召回率 (Recall)
+              和 AUC (曲線下面積)。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 21-26: 混淆矩陣與模型評估 -->
+      <section data-section="混淆矩陣" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >21-26</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              混淆矩陣與模型評估
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">3分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary">混淆矩陣是什麼？</strong>
+                它是一個表格，用來視覺化分類模型在測試集上的表現，告訴我們模型預測的「有」或「沒有」跟真實情況是不是一致。
+              </p>
+
+              <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-green-100 rounded p-3">
+                  <p class="text-sm font-semibold text-green-700">
+                    True Positive (TP)
+                  </p>
+                  <p class="text-xs text-neutral-600">
+                    真正有憂鬱，模型也預測有憂鬱
+                  </p>
+                </div>
+                <div class="bg-green-100 rounded p-3">
+                  <p class="text-sm font-semibold text-green-700">
+                    True Negative (TN)
+                  </p>
+                  <p class="text-xs text-neutral-600">
+                    真正沒有憂鬱，模型也預測沒有憂鬱
+                  </p>
+                </div>
+                <div class="bg-red-100 rounded p-3">
+                  <p class="text-sm font-semibold text-red-700">
+                    False Positive (FP)
+                  </p>
+                  <p class="text-xs text-neutral-600">
+                    真正沒有憂鬱，模型卻預測有憂鬱（偽陽性）
+                  </p>
+                </div>
+                <div class="bg-red-100 rounded p-3">
+                  <p class="text-sm font-semibold text-red-700">
+                    False Negative (FN)
+                  </p>
+                  <p class="text-xs text-neutral-600">
+                    真正有憂鬱，模型卻預測沒有憂鬱（偽陰性）
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary"
+                  >精確度 (Accuracy) 和 準確率 (Precision) 的差異：</strong
+                >
+              </p>
+              <ul class="space-y-2 text-sm">
+                <li class="flex items-start">
+                  <i
+                    class="ri-checkbox-circle-line text-primary mr-2 mt-0.5"
+                  ></i>
+                  <div>
+                    <strong>Accuracy (整體準確率)：</strong>
+                    指的是模型整體預測正確的比例，計算公式是 (TP + TN) / (TP +
+                    TN + FP + FN)。
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <i
+                    class="ri-checkbox-circle-line text-primary mr-2 mt-0.5"
+                  ></i>
+                  <div>
+                    <strong>Precision (精確度)：</strong>
+                    衡量的是在所有模型預測為正的樣本中，有多少是真正為正的。計算公式是
+                    TP / (TP + FP)。
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="bg-purple-50 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary">模型表現數值解釋：</strong>
+              </p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white rounded p-3">
+                  <p class="text-xs text-neutral-600">Precision(有憂鬱)</p>
+                  <p class="text-2xl font-bold text-primary">0.80</p>
+                  <p class="text-xs text-neutral-500">
+                    預測有憂鬱中，80%確實有
+                  </p>
+                </div>
+                <div class="bg-white rounded p-3">
+                  <p class="text-xs text-neutral-600">Recall(有憂鬱)</p>
+                  <p class="text-2xl font-bold text-secondary">0.73</p>
+                  <p class="text-xs text-neutral-500">
+                    真正有憂鬱中，73%被找出
+                  </p>
+                </div>
+                <div class="bg-white rounded p-3">
+                  <p class="text-xs text-neutral-600">Precision(無憂鬱)</p>
+                  <p class="text-2xl font-bold text-primary">0.66</p>
+                  <p class="text-xs text-neutral-500">
+                    預測無憂鬱中，66%確實無
+                  </p>
+                </div>
+                <div class="bg-white rounded p-3">
+                  <p class="text-xs text-neutral-600">Recall(無憂鬱)</p>
+                  <p class="text-2xl font-bold text-secondary">0.74</p>
+                  <p class="text-xs text-neutral-500">
+                    真正無憂鬱中，74%被找出
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 27-28: 特徵重要性 -->
+      <section data-section="特徵重要性" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >27-28</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              特徵重要性分析
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">1分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">誰是關鍵？</strong>
+              學業壓力在兩個模型中都顯示出最⾼的重要性， 在 Logistic Regression
+              與 Random Forest 均為
+              <span class="font-semibold text-secondary">Rank #1</span>，
+              再次證明它是預測憂鬱風險的關鍵因素。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">還有誰重要？</strong> 年齡、CGPA
+              (學業平均成績)、學習滿意度等也對憂鬱風險有影響。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 29-32: ROC曲線 -->
+      <section data-section="ROC曲線" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >29-32</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              ROC曲線與AUC值
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">ROC曲線：</strong>
+              這條曲線視覺化呈現了分類模型在不同判斷門檻下的表現。曲線越靠近左上角越好，代表模型分類效果越棒。
+            </p>
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">AUC值：</strong>
+              曲線下面積，衡量模型區分「有憂鬱」和「無憂鬱」這兩類的能力。AUC
+              值越高代表模型分類能力越好。我們的模型 AUC 值都在 0.75
+              以上，表現良好。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 33-37: Random Forest 原理 -->
+      <section data-section="隨機森林" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >33-37</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              Random Forest 原理 - 隨機森林簡單講
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">1.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <div class="bg-orange-50 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary">隨機森林模型是怎麼預測的？</strong>
+              </p>
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                它就像一個「<span class="font-bold text-orange-600">大老闆</span
+                >」，不像一個單打獨鬥的「小員工」。它不只用一棵決策樹來判斷，而是訓練了<span
+                  class="font-bold text-orange-600"
+                  >很多很多棵</span
+                >「隨機」的小決策樹，然後讓這些樹各自做出判斷，最後再集合大家的意見，用「<span
+                  class="font-bold text-orange-600"
+                  >投票</span
+                >」的方式來決定最終結果。
+              </p>
+            </div>
+
+            <div class="bg-neutral-100 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed mb-3">
+                <strong class="text-primary">怎麼做到「隨機」？</strong>
+              </p>
+              <ul class="space-y-2 text-sm">
+                <li class="flex items-start">
+                  <span
+                    class="inline-flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs mr-2 mt-0.5"
+                    >1</span
+                  >
+                  <div>
+                    <strong>資料隨機抽樣：</strong>
+                    每棵小樹訓練用的資料都是從原始資料中隨機抽取出來的，而且可以重複抽（這叫做
+                    Bootstrap Sampling）。
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span
+                    class="inline-flex items-center justify-center w-6 h-6 bg-primary text-white rounded-full text-xs mr-2 mt-0.5"
+                    >2</span
+                  >
+                  <div>
+                    <strong>特徵隨機選擇：</strong>
+                    建立每棵樹的時候，它不是看所有特徵來分裂，而是只從隨機選取的一小部分特徵中挑選。
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-4">
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">這樣有什麼好處？</strong>
+                因為每棵小樹都是獨立思考的，而且有隨機性，所以它們的判斷會比較多樣化。當大家一起投票時，就能大大減少單一決策樹可能犯的錯誤，讓最終的預測結果更穩定、更準確，也比較不會過度擬合（Overfitting）。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 38-43: 資料庫整合 -->
+      <section data-section="資料庫整合" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >38-43</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              資料庫整合與視覺化
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">2分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed mb-4">
+              <strong class="text-primary">我們怎麼讓數據活起來？</strong>
+              我們建立了一個「三層樓」系統：
+            </p>
+
+            <div class="space-y-3">
+              <div
+                class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border-l-4 border-blue-500"
+              >
+                <p class="text-neutral-700 leading-relaxed">
+                  <strong class="text-blue-700">資料前處理層 (Python)：</strong>
+                  這是我們的「廚房」，負責資料清洗、特徵工程、模型訓練和預測結果產出。
+                </p>
+                <div class="mt-3 bg-white rounded p-3">
+                  <p class="text-sm text-neutral-600">
+                    <strong>模組化設計：</strong>
+                    我們把整個分析流程拆分成一個個獨立的、可以重複使用的「積木」或「零件」。例如，資料清洗是一個模組，模型訓練是另一個模組。這樣當有新資料進來時，只需要針對特定的「積木」進行更新，讓整個系統更靈活、好維護。
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border-l-4 border-purple-500"
+              >
+                <p class="text-neutral-700 leading-relaxed">
+                  <strong class="text-purple-700"
+                    >資料持久層 (MySQL 資料庫)：</strong
+                  >
+                  這是我們的「倉庫」，把 Python
+                  分析結果全部存起來，方便管理和查詢。它也支援索引優化，確保視覺化時資料查詢速度快。
+                </p>
+              </div>
+
+              <div
+                class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-l-4 border-green-500"
+              >
+                <p class="text-neutral-700 leading-relaxed">
+                  <strong class="text-green-700"
+                    >視覺化展示層 (Grafana 儀表板)：</strong
+                  >
+                  這是我們的「展示廳」，透過連接
+                  MySQL，把數據變成即時更新的互動式圖表，超直觀！
+                </p>
+              </div>
+            </div>
+
+            <p class="text-neutral-700 leading-relaxed mt-4">
+              <strong class="text-primary">資料流轉：</strong>
+              整個系統是單向資料流設計，確保分析結果的一致性與可追溯性。Python
+              處理完資料後寫入 MySQL，Grafana 再從 MySQL 讀取並顯示。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 44-46: 實際貢獻 -->
+      <section data-section="實際貢獻" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >44-46</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">
+              實際貢獻與價值
+            </h2>
+            <span class="ml-auto text-sm text-neutral-500">1分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed mb-3">
+              <strong class="text-primary">這個系統對學校有什麼用？</strong>
+            </p>
+            <div class="space-y-3">
+              <div class="flex items-start">
+                <i
+                  class="ri-alarm-warning-line text-2xl text-amber-500 mr-3"
+                ></i>
+                <div>
+                  <p class="font-semibold text-neutral-800">及早預警</p>
+                  <p class="text-sm text-neutral-600">
+                    透過數據監控，學校可以更早發現那些面臨高學業壓力的學生，有效預防憂鬱風險。
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <i class="ri-focus-3-line text-2xl text-blue-500 mr-3"></i>
+                <div>
+                  <p class="font-semibold text-neutral-800">精準干預</p>
+                  <p class="text-sm text-neutral-600">
+                    根據我們詳細的數據分析結果，學校可以制定更具針對性的心理健康輔導策略，例如針對不同學歷或性別的學生提供差異化的幫助。
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <i
+                  class="ri-bar-chart-box-line text-2xl text-green-500 mr-3"
+                ></i>
+                <div>
+                  <p class="font-semibold text-neutral-800">資源優化</p>
+                  <p class="text-sm text-neutral-600">
+                    幫助學校合理分配心理健康資源，提升效益，讓資源用在最需要的地方。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 47: 結論與建議 -->
+      <section data-section="結論與建議" class="mb-12 section-transition">
+        <div
+          class="bg-white rounded-lg shadow-sm p-6 border border-neutral-200"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-full text-sm font-bold mr-3"
+              >47</span
+            >
+            <h2 class="text-xl font-semibold text-neutral-800">結論與建議</h2>
+            <span class="ml-auto text-sm text-neutral-500">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-neutral-700 leading-relaxed">
+              <strong class="text-primary">總結：</strong>
+              學業壓力確實是影響大學生憂鬱風險的重要因素。我們的預測模型和資料視覺化系統，能夠有效協助學校進行監測和干預。
+            </p>
+            <div
+              class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4"
+            >
+              <p class="text-neutral-700 leading-relaxed">
+                <strong class="text-primary">我們的建議：</strong>
+                學校應該加強對高學業壓力學生的心理健康支持，例如開設壓力管理課程、提供個別諮詢服務，並持續追蹤數據變化。未來研究可以考慮納入睡眠和社交支持等更多變項，建立更全面的長期追蹤系統。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 48: Q&A -->
+      <section data-section="Q&A" class="mb-12 section-transition">
+        <div
+          class="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-sm p-6"
+        >
+          <div class="flex items-center mb-4">
+            <span
+              class="inline-flex items-center justify-center w-8 h-8 bg-white text-primary rounded-full text-sm font-bold mr-3"
+              >48</span
+            >
+            <h2 class="text-xl font-semibold">Q&A</h2>
+            <span class="ml-auto text-sm text-white/80">0.5分鐘</span>
+          </div>
+          <div class="space-y-4">
+            <p class="text-white/90 leading-relaxed">
+              <strong>感謝：</strong> 感謝各位老師、同學的聆聽！
+            </p>
+            <p class="text-white/90 leading-relaxed">
+              <strong>提問：</strong> 請問大家有沒有任何問題？
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 報告流程建議 -->
+      <section data-section="報告流程建議" class="mb-12 section-transition">
+        <div
+          class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm p-6 border border-amber-200"
+        >
+          <h2 class="text-xl font-semibold text-neutral-800 mb-4">
+            <i class="ri-lightbulb-line text-amber-500 mr-2"></i>
+            報告流程建議
+          </h2>
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>語速適中，口語化表達：</strong>
+                盡量避免生硬的學術詞彙，用生活化的比喻（如「大老闆」、「三層樓」、「積木」）來解釋複雜概念。
+              </p>
+            </div>
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>眼神交流與自信：</strong>
+                報告時多與聽眾互動，展現你對內容的熟悉與熱情。
+              </p>
+            </div>
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>時間控制：</strong> 嚴格按照每頁建議時間，確保在 15
+                分鐘內完成，並預留 Q&A 時間。
+              </p>
+            </div>
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>重點強調：</strong>
+                針對關鍵數據和發現，可以用手勢或語氣加強，讓聽眾印象深刻。
+              </p>
+            </div>
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>混淆矩陣和隨機森林：</strong>
+                這兩部分可以放慢語速，多解釋一下，確保非專業背景的聽眾也能聽懂。
+              </p>
+            </div>
+            <div class="flex items-start">
+              <i class="ri-check-double-line text-amber-500 mr-2 mt-0.5"></i>
+              <p class="text-neutral-700">
+                <strong>模組化解釋：</strong> 在講到第 40
+                頁時，可以稍作停頓，用「積木」的比喻來解釋模組化，讓聽眾更容易理解。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部快速導航 -->
+    <footer
+      class="fixed bottom-0 left-0 w-full bg-white border-t border-neutral-200 z-30"
+    >
+      <div class="container mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+          <button
+            id="prev-section"
+            class="text-neutral-600 hover:text-primary transition-colors"
+          >
+            <i class="ri-arrow-left-s-line text-2xl"></i>
+          </button>
+          <span
+            id="current-section"
+            class="text-sm font-medium text-neutral-700"
+            >封面</span
+          >
+          <button
+            id="next-section"
+            class="text-neutral-600 hover:text-primary transition-colors"
+          >
+            <i class="ri-arrow-right-s-line text-2xl"></i>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 隱藏彩蛋按鈕 -->
+    <div class="easter-egg" id="easter-egg">
+      <i class="ri-heart-3-fill text-pink-500"></i>
+    </div>
+
+    <!-- 彩蛋訊息 -->
+    <div class="easter-egg-message" id="easter-egg-message">
+      <h3 class="text-2xl font-bold mb-4">你發現了彩蛋！🎉</h3>
+      <p class="mb-4">記住，無論壓力多大，總有人在乎你。</p>
+      <p class="mb-4">深呼吸，一步一步來，你可以的！💪</p>
+      <button
+        onclick="closeEasterEgg()"
+        class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-purple-100 transition-colors"
+      >
+        關閉
+      </button>
+    </div>
+
+    <script>
+      // 章節資料
+      const sections = [
+        { id: "section-1", name: "封面" },
+        { id: "section-2", name: "摘要" },
+        { id: "section-3", name: "緒論" },
+        { id: "section-4", name: "文獻回顧" },
+        { id: "section-5", name: "研究方法" },
+        { id: "section-6", name: "描述性統計" },
+        { id: "section-7", name: "機器學習模型" },
+        { id: "section-8", name: "混淆矩陣" },
+        { id: "section-9", name: "特徵重要性" },
+        { id: "section-10", name: "ROC曲線" },
+        { id: "section-11", name: "隨機森林" },
+        { id: "section-12", name: "資料庫整合" },
+        { id: "section-13", name: "實際貢獻" },
+        { id: "section-14", name: "結論與建議" },
+        { id: "section-15", name: "Q&A" },
+        { id: "section-16", name: "報告流程建議" },
+      ];
+
+      let currentSectionIndex = 0;
+
+      // 初始化章節導航
+      function initSectionNav() {
+        const nav = document.getElementById("section-nav");
+        sections.forEach((section, index) => {
+          const link = document.createElement("a");
+          link.href = "#";
+          link.className =
+            "block px-4 py-2 rounded-lg text-neutral-700 hover:bg-primary/10 hover:text-primary transition-colors";
+          link.innerHTML = `<i class="ri-file-text-line mr-2"></i>${section.name}`;
+          link.onclick = (e) => {
+            e.preventDefault();
+            goToSection(index);
+            closeSidebar();
+          };
+          nav.appendChild(link);
+        });
+      }
+
+      // 跳轉到指定章節
+      function goToSection(index) {
+        currentSectionIndex = index;
+        const sections = document.querySelectorAll("section[data-section]");
+        if (sections[index]) {
+          sections[index].scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+          updateCurrentSection();
+        }
+      }
+
+      // 更新當前章節顯示
+      function updateCurrentSection() {
+        document.getElementById("current-section").textContent =
+          sections[currentSectionIndex].name;
+        updateProgress();
+      }
+
+      // 更新進度條
+      function updateProgress() {
+        const progress = ((currentSectionIndex + 1) / sections.length) * 100;
+        document.getElementById("progress-bar").style.width = `${progress}%`;
+      }
+
+      // 側邊欄控制
+      const sidebar = document.getElementById("sidebar");
+      const menuToggle = document.getElementById("menu-toggle");
+      const closeMenu = document.getElementById("close-menu");
+
+      function openSidebar() {
+        sidebar.classList.remove("translate-x-full");
+        sidebar.classList.add("translate-x-0");
+      }
+
+      function closeSidebar() {
+        sidebar.classList.remove("translate-x-0");
+        sidebar.classList.add("translate-x-full");
+      }
+
+      menuToggle.addEventListener("click", openSidebar);
+      closeMenu.addEventListener("click", closeSidebar);
+
+      // 點擊外部關閉側邊欄
+      document.addEventListener("click", (e) => {
+        if (
+          !sidebar.contains(e.target) &&
+          !menuToggle.contains(e.target) &&
+          !sidebar.classList.contains("translate-x-full")
+        ) {
+          closeSidebar();
+        }
+      });
+
+      // 上一章節/下一章節按鈕
+      document.getElementById("prev-section").addEventListener("click", () => {
+        if (currentSectionIndex > 0) {
+          goToSection(currentSectionIndex - 1);
+        }
+      });
+
+      document.getElementById("next-section").addEventListener("click", () => {
+        if (currentSectionIndex < sections.length - 1) {
+          goToSection(currentSectionIndex + 1);
+        }
+      });
+
+      // 滾動監聽，更新當前章節
+      let isScrolling = false;
+      function handleScroll() {
+        if (!isScrolling) {
+          window.requestAnimationFrame(() => {
+            const scrollPosition = window.scrollY + 100;
+            const sectionElements = document.querySelectorAll(
+              "section[data-section]"
+            );
+
+            for (let i = sectionElements.length - 1; i >= 0; i--) {
+              if (sectionElements[i].offsetTop <= scrollPosition) {
+                if (currentSectionIndex !== i) {
+                  currentSectionIndex = i;
+                  updateCurrentSection();
+                }
+                break;
+              }
+            }
+            isScrolling = false;
+          });
+          isScrolling = true;
+        }
+      }
+
+      window.addEventListener("scroll", handleScroll);
+
+      // Intersection Observer for section animations
+      const observerOptions = {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.1,
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("section-visible");
+          }
+        });
+      }, observerOptions);
+
+      // 觀察所有章節
+      document.querySelectorAll(".section-transition").forEach((section) => {
+        observer.observe(section);
+      });
+
+      // 隱藏彩蛋功能
+      let easterEggClickCount = 0;
+      let easterEggTimer = null;
+
+      document.getElementById("easter-egg").addEventListener("click", () => {
+        easterEggClickCount++;
+
+        // 重置計時器
+        clearTimeout(easterEggTimer);
+        easterEggTimer = setTimeout(() => {
+          easterEggClickCount = 0;
+        }, 1000);
+
+        // 連點三次觸發彩蛋
+        if (easterEggClickCount >= 3) {
+          document.getElementById("easter-egg-message").style.display = "block";
+          easterEggClickCount = 0;
+        }
+      });
+
+      // 關閉彩蛋訊息
+      function closeEasterEgg() {
+        document.getElementById("easter-egg-message").style.display = "none";
+      }
+
+      // 鍵盤快捷鍵（Ctrl+Shift+H 觸發彩蛋）
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === "H") {
+          document.getElementById("easter-egg-message").style.display = "block";
+        }
+      });
+
+      // 初始化
+      initSectionNav();
+    </script>
+  </body>
+</html>

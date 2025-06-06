@@ -6,6 +6,7 @@
 條形圖、分布圖、ROC 曲線、特徵重要性等視覺化工具。
 """
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,17 +24,46 @@ def setup_chinese_font(font_path=None):
     Returns:
         matplotlib.font_manager.FontProperties: 中文字型屬性物件
     """
-    if font_path is None:
-        # 預設路徑，依系統環境可能需調整
-        font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+    import matplotlib.font_manager as fm
     
-    # 載入字型
-    plt.rcParams['font.family'] = 'Noto Sans CJK JP'
-    plt.rcParams['axes.unicode_minus'] = False
-    sns.set_style('whitegrid')
-    
-    # 回傳字型屬性物件，供後續圖表使用
-    return FontProperties(fname=font_path)
+    try:
+        if font_path and os.path.exists(font_path):
+            # 使用下載的字型
+            zh_font = FontProperties(fname=font_path)
+            plt.rcParams['font.sans-serif'] = ['Noto Sans CJK JP', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+        else:
+            # 嘗試系統字型
+            available_fonts = [f.name for f in fm.fontManager.ttflist]
+            chinese_fonts = ['Noto Sans CJK TC', 'Noto Sans CJK SC', 'SimHei', 'Arial Unicode MS', 'PingFang TC', 'Heiti TC']
+            
+            selected_font = None
+            for font in chinese_fonts:
+                if font in available_fonts:
+                    selected_font = font
+                    break
+            
+            if selected_font:
+                plt.rcParams['font.sans-serif'] = [selected_font, 'DejaVu Sans']
+                zh_font = FontProperties(family=selected_font)
+            else:
+                # 使用 DejaVu Sans 作為後備
+                plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+                zh_font = FontProperties(family='DejaVu Sans')
+        
+        # 設定通用參數
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['axes.unicode_minus'] = False
+        sns.set_style('whitegrid')
+        
+        return zh_font
+        
+    except Exception as e:
+        print(f"字型設置警告: {e}")
+        # 使用系統預設字型
+        plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'sans-serif']
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['axes.unicode_minus'] = False
+        return FontProperties(family='DejaVu Sans')
 
 def plot_depression_by_pressure_level(df, zh_font, figsize=(8, 6), save_path=None):
     """

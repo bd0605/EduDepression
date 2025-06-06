@@ -21,6 +21,10 @@ from sklearn.metrics import (
 )
 from sklearn.inspection import permutation_importance
 from sklearn.decomposition import PCA
+import warnings
+
+# 忽略特定警告
+warnings.filterwarnings('ignore', category=RuntimeWarning, message='invalid value encountered in divide')
 
 
 def prepare_features(df, features=None, target='Depression', test_size=0.2, random_state=42):
@@ -51,16 +55,29 @@ def prepare_features(df, features=None, target='Depression', test_size=0.2, rand
     X = df[features]
     y = df[target]
 
+    # 檢查並移除標準差為零的特徵
+    valid_features = []
+    for col in features:
+        if col in X.columns and X[col].std() > 1e-10:
+            valid_features.append(col)
+    
+    if len(valid_features) == 0:
+        raise ValueError("沒有有效的特徵用於訓練模型")
+    
+    # 只使用有效特徵
+    X = X[valid_features]
+    
     # 標準化特徵
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        X_scaled = scaler.fit_transform(X)
 
     # 分割資料集
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y, test_size=test_size, random_state=random_state, stratify=y
     )
 
-    return X_train, X_test, y_train, y_test, scaler
+    return X_train, X_test, y_train, y_test, scaler, valid_features
 
 
 def train_logistic_regression(X_train, y_train, class_weight='balanced', solver='liblinear',
@@ -263,9 +280,23 @@ def check_correlation_with_depression(df, target='Depression'):
     """
     # 選擇數值型欄位
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    # 過濾掉標準差為零的特徵（避免除法錯誤）
+    valid_cols = []
+    for col in num_cols:
+        if col != target and df[col].std() > 1e-10:  # 避免標準差為零的欄位
+            valid_cols.append(col)
+    
+    if not valid_cols:
+        print("警告: 沒有有效的數值特徵用於相關性分析")
+        return pd.Series(dtype=float)
 
-    # 計算相關係數
-    corr = df[num_cols].corrwith(df[target]).drop(target, errors='ignore')
+    # 計算相關係數，忽略警告
+    with np.errstate(divide='ignore', invalid='ignore'):
+        corr = df[valid_cols + [target]].corr()[target].drop(target, errors='ignore')
+    
+    # 移除 NaN 值
+    corr = corr.dropna()
 
     # 排序並返回
     return corr.sort_values(ascending=False)
@@ -285,29 +316,60 @@ def perform_pca_analysis(df, features_all):
             - pc1_loadings: PC1 載荷量排序
             - academic_pressure_rank_pc1: 學業壓力在 PC1 中的重要性排名
     """
-    pca = PCA(n_components=min(5, len(features_all)))
-    pca.fit(df[features_all])
-    loadings = pd.Series(pca.components_[0], index=features_all).abs(
-    ).sort_values(ascending=False)
+    # 過濾掉標準差為零的特徵
+    valid_features = []
+    for col in features_all:
+        if col in df.columns and df[col].std() > 1e-10:
+            valid_features.append(col)
+    
+    if len(valid_features) < 2:
+        print("警告: PCA 分析需要至少 2 個有效特徵")
+        return {
+            "explained_variance_ratio_pc1": 0,
+            "pc1_loadings": pd.Series(dtype=float),
+            "academic_pressure_rank_pc1": -1
+        }
+    
+    # 標準化數據避免除法錯誤
+    try:
+        with np.errstate(divide='ignore', invalid='ignore'):
+            data_for_pca = df[valid_features].fillna(df[valid_features].median())
+            scaler = StandardScaler()
+            data_scaled = scaler.fit_transform(data_for_pca)
+            
+            pca = PCA(n_components=min(5, len(valid_features)))
+            pca.fit(data_scaled)
+            
+            loadings = pd.Series(
+                np.abs(pca.components_[0]), 
+                index=valid_features
+            ).sort_values(ascending=False)
 
-    explained_variance_ratio_pc1 = np.round(
-        pca.explained_variance_ratio_[0], 3)
-    academic_pressure_rank_pc1 = -1
-    if 'Academic Pressure_Value' in features_all:
-        academic_pressure_rank_pc1 = list(
-            loadings.index).index('Academic Pressure_Value') + 1
+        explained_variance_ratio_pc1 = np.round(pca.explained_variance_ratio_[0], 3)
+        academic_pressure_rank_pc1 = -1
+        
+        if 'Academic Pressure_Value' in valid_features:
+            academic_pressure_rank_pc1 = list(loadings.index).index('Academic Pressure_Value') + 1
 
-    print("\nPCA分析（主成分分析）:")
-    print(f"PC1 解釋變異比例：{explained_variance_ratio_pc1}")
-    print("PC1 載荷量排序（前5項）：\n", loadings.head(5).round(3))
-    if 'Academic Pressure_Value' in features_all:
-        print(f"→ 學業壓力在PC1中的重要性排名：{academic_pressure_rank_pc1}")
+        print("\nPCA分析（主成分分析）:")
+        print(f"PC1 解釋變異比例：{explained_variance_ratio_pc1}")
+        print("PC1 載荷量排序（前5項）：\n", loadings.head(5).round(3))
+        if 'Academic Pressure_Value' in valid_features:
+            print(f"→ 學業壓力在PC1中的重要性排名：{academic_pressure_rank_pc1}")
 
-    return {
-        "explained_variance_ratio_pc1": explained_variance_ratio_pc1,
-        "pc1_loadings": loadings,
-        "academic_pressure_rank_pc1": academic_pressure_rank_pc1
-    }
+        return {
+            "explained_variance_ratio_pc1": explained_variance_ratio_pc1,
+            "pc1_loadings": loadings,
+            "academic_pressure_rank_pc1": academic_pressure_rank_pc1
+        }
+        
+    except Exception as e:
+        print(f"PCA 分析發生錯誤: {e}")
+        return {
+            "explained_variance_ratio_pc1": 0,
+            "pc1_loadings": pd.Series(dtype=float),
+            "academic_pressure_rank_pc1": -1
+        }
 
 
 def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, random_state=42):
@@ -355,9 +417,12 @@ def train_and_evaluate(df, features=None, target='Depression', test_size=0.2, ra
     pca_results = perform_pca_analysis(df, features)
 
     # 分割資料集並標準化
-    X_train, X_test, y_train, y_test, scaler = prepare_features(
+    X_train, X_test, y_train, y_test, scaler, valid_features = prepare_features(
         df, features, target, test_size, random_state
     )
+    
+    # 更新特徵列表為有效特徵
+    features = valid_features
 
     # 訓練 Logistic Regression 模型
     lr_model = train_logistic_regression(

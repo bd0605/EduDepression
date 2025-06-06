@@ -182,7 +182,7 @@ sudo systemctl enable grafana-server
 Name: EduDepression-MySQL
 Host: localhost:3306
 Database: depression_db
-User: root
+Username: root
 Password: (您的MySQL密碼，通常為空)
 Session timezone: +08:00
 ```
@@ -195,7 +195,7 @@ Session timezone: +08:00
 
 ### 步驟 1: 匯入預設儀表板
 
-1. 點擊左側 + 圖示 → **"Import"**
+1. 點擊左側 **"Dashboards"** → 右側 **"New"** 展開後點擊 **"Import"**
 2. 點擊 **"Upload .json file"**
 3. 選擇專案中的 `grafana/dashboard.json` 檔案
 4. 設定儀表板資訊：
@@ -353,9 +353,3 @@ sudo cp -r /etc/grafana/ ~/grafana_backup_$(date +%Y%m%d)/
 2. 參考本指南的疑難排解章節
 3. 在社群論壇尋求協助
 4. 聯繫專案維護者
-
----
-
-**最後更新**: 2024 年 12 月
-**適用版本**: EduDepression v1.0+
-**作者**: EduDepression 開發團隊
