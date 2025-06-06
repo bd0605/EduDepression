@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", 3.11]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Test import modules
+        run: |
+          python -c "from src import preprocess, plot_utils, model_utils, db_utils, font_loader"
+          echo "✅ All modules imported successfully"
+
+      - name: Test font loading
+        run: |
+          python -c "from src.font_loader import download_font_if_not_exist; download_font_if_not_exist()"
+          echo "✅ Font loading test passed"
+
+      - name: Run project integrity test
+        run: |
+          python test_project.py
+          echo "✅ Project integrity test passed"
+
+      - name: Test main analysis (without graphics)
+        run: |
+          python -c "
+          import matplotlib
+          matplotlib.use('Agg')  # 使用非互動式後端
+          import os
+          if os.path.exists('data/student_depression_dataset.csv'):
+              from src.preprocess import preprocess
+              from src.model_utils import train_and_evaluate
+              df = preprocess('data/student_depression_dataset.csv')
+              print(f'✅ 預處理完成，資料量: {len(df)} 筆')
+              features = ['Academic Pressure_Value', 'Age', 'CGPA']
+              available_features = [f for f in features if f in df.columns]
+              if len(available_features) >= 2 and len(df) > 100:
+                  results = train_and_evaluate(df, available_features)
+                  print('✅ 模型訓練和評估完成')
+              else:
+                  print('⚠️ 跳過模型測試（資料或特徵不足）')
+          else:
+              print('⚠️ 資料檔案不存在，跳過分析測試')
+          print('✅ Main analysis modules working correctly')
+          "

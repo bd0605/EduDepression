@@ -141,9 +141,12 @@ def engineer_features(df):
                 'Work Pressure', 'CGPA', 'Study Satisfaction']
     result_df[num_cols] = result_df[num_cols].fillna(result_df[num_cols].median())
     
-    # 移除離群值 (使用 Z-score)
-    z = stats.zscore(result_df[num_cols])
-    result_df = result_df[(np.abs(z) < 3).all(axis=1)].reset_index(drop=True)
+    # 移除離群值 (使用 Z-score，但只在資料量足夠時執行)
+    if len(result_df) > 1000:  # 只有在資料量足夠時才進行離群值移除
+        z = stats.zscore(result_df[num_cols])
+        result_df = result_df[(np.abs(z) < 3).all(axis=1)].reset_index(drop=True)
+    else:
+        print(f"資料量較少 ({len(result_df)} 筆)，跳過離群值移除")
     
     # 學歷序數與增強特徵
     order4 = ['高中及以下', '大學', '碩士', '博士']
