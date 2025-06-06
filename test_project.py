@@ -139,7 +139,7 @@ def test_dependencies():
     
     required_packages = [
         "pandas", "numpy", "scipy", "matplotlib", 
-        "seaborn", "sklearn", "sqlalchemy", "pymysql", "requests"
+        "seaborn", "sklearn", "sqlalchemy", "pymysql", "requests", "tqdm"
     ]
     
     missing_packages = []

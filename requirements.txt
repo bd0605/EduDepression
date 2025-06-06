@@ -7,3 +7,4 @@ scikit-learn>=1.0.0
 sqlalchemy>=1.4.0
 pymysql>=1.0.0
 requests>=2.25.0
+tqdm>=4.64.0
