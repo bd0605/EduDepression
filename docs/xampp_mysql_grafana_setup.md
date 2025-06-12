@@ -349,7 +349,7 @@ sudo cp -r /etc/grafana/ ~/grafana_backup_$(date +%Y%m%d)/
 
 如果在設定過程中遇到問題：
 
-1. 查看專案的 [Issue 頁面](https://github.com/your-repo/issues)
+1. 查看專案的 [Issue 頁面](https://github.com/bd0605/EduDepression/issues)
 2. 參考本指南的疑難排解章節
 3. 在社群論壇尋求協助
 4. 聯繫專案維護者
