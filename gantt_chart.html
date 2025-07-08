@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業甘特圖專案時程管理工具</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        // Tailwind 配置：定義設計系統核心變數
+        tailwind.config = {
+            theme: {
+                extend: {
+                    // 色彩系統：專業藍色調配色方案，確保 WCAG AA 對比度
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe', 
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a'
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        },
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        error: '#ef4444'
+                    },
+                    // 字體系統：多語言支援的字體棧
+                    fontFamily: {
+                        'sans': ['Inter', 'Noto Sans TC', 'system-ui', 'sans-serif']
+                    },
+                    // 間距刻度：確保視覺節奏一致性
+                    spacing: {
+                        '18': '4.5rem',
+                        '88': '22rem',
+                        '128': '32rem'
+                    },
+                    // 陰影系統：增強層次感
+                    boxShadow: {
+                        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 自定義 CSS：補強 Tailwind 無法覆蓋的細節 */
+        
+        /* 甘特圖容器：確保平滑捲動體驗 */
+        .gantt-container {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        .gantt-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .gantt-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        .gantt-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .gantt-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* 任務條樣式：視覺化專案進度 */
+        .task-bar {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .task-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        /* 進度條：漸層效果增強視覺回饋 */
+        .progress-fill {
+            background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+            height: 100%;
+            border-radius: inherit;
+            transition: width 0.5s ease-out;
+        }
+        
+        /* 拖拽時的視覺回饋 */
+        .dragging {
+            opacity: 0.7;
+            transform: rotate(2deg) scale(1.02);
+            z-index: 1000;
+        }
+        
+        /* 網格線：增強時間軸可讀性 */
+        .grid-line {
+            stroke: #e2e8f0;
+            stroke-width: 1;
+            opacity: 0.6;
+        }
+        
+        .grid-line.major {
+            stroke: #cbd5e1;
+            stroke-width: 1.5;
+            opacity: 0.8;
+        }
+        
+        /* 載入動畫：提升等待體驗 */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* 隱藏彩蛋按鈕：隱蔽但易發現 */
+        .easter-egg {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #3b82f6, #60a5fa);
+            border-radius: 50%;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 9999;
+        }
+        
+        .easter-egg:hover {
+            opacity: 1;
+            transform: scale(1.2) rotate(360deg);
+        }
+        
+        /* 響應式字體：確保跨設備可讀性 */
+        @media (max-width: 640px) {
+            .text-responsive {
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+            }
+        }
+        
+        /* 觸控優化：增大點擊區域 */
+        @media (hover: none) {
+            .touch-target {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-secondary-50 font-sans antialiased">
+    <!-- 主要應用容器：採用 CSS Grid 佈局確保響應式適配 -->
+    <div class="min-h-screen flex flex-col">
+        
+        <!-- Header：品牌標識與主要導航 -->
+        <header class="bg-white shadow-soft border-b border-secondary-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Logo 與標題：建立專業品牌印象 -->
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-gantt text-white text-sm"></i>
+                        </div>
+                        <h1 class="text-xl font-bold text-secondary-900 tracking-tight">專案時程管理</h1>
+                    </div>
+                    
+                    <!-- 工具欄：快速操作按鈕 -->
+                    <div class="flex items-center space-x-2">
+                        <button id="addTaskBtn" class="touch-target inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:bg-primary-700 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span class="hidden sm:inline">新增任務</span>
+                        </button>
+                        <button id="exportBtn" class="touch-target inline-flex items-center px-3 py-2 bg-secondary-100 text-secondary-700 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-secondary-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2">
+                            <i class="fas fa-download mr-2"></i>
+                            <span class="hidden sm:inline">匯出</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主要內容區域：Flexbox 佈局支援響應式調整 -->
+        <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            
+            <!-- 左側任務列表：Mobile-first 響應式設計 -->
+            <aside class="w-full lg:w-80 bg-white border-b lg:border-b-0 lg:border-r border-secondary-200 flex flex-col">
+                <!-- 任務列表標題 -->
+                <div class="p-4 border-b border-secondary-200">
+                    <h2 class="text-lg font-semibold text-secondary-900 flex items-center">
+                        <i class="fas fa-tasks mr-2 text-primary-500"></i>
+                        任務列表
+                    </h2>
+                </div>
+                
+                <!-- 任務列表內容：可捲動區域 -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-3" id="taskList">
+                    <!-- 動態產生的任務項目將插入此處 -->
+                </div>
+            </aside>
+            
+            <!-- 右側甘特圖區域：主要視覺化內容 -->
+            <section class="flex-1 flex flex-col overflow-hidden">
+                <!-- 甘特圖工具欄：時間範圍控制 -->
+                <div class="bg-white border-b border-secondary-200 p-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                        <h2 class="text-lg font-semibold text-secondary-900 flex items-center">
+                            <i class="fas fa-chart-gantt mr-2 text-primary-500"></i>
+                            時程甘特圖
+                        </h2>
+                        
+                        <!-- 時間範圍選擇器：增強使用者控制感 -->
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-secondary-600">檢視範圍：</label>
+                            <select id="timeRange" class="text-sm border border-secondary-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <option value="week">本週</option>
+                                <option value="month" selected>本月</option>
+                                <option value="quarter">本季</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 甘特圖主體：SVG 渲染的時程視覺化 -->
+                <div class="flex-1 gantt-container overflow-auto bg-white" id="ganttContainer">
+                    <svg id="ganttChart" class="w-full h-full min-w-full" style="min-height: 400px;">
+                        <!-- SVG 內容將透過 JavaScript 動態生成 -->
+                    </svg>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- 任務表單模態框：Material Design 風格的浮層設計 -->
+    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- 模態框標題 -->
+            <div class="p-6 border-b border-secondary-200">
+                <h3 class="text-xl font-semibold text-secondary-900" id="modalTitle">新增任務</h3>
+            </div>
+            
+            <!-- 表單內容：完整的任務屬性輸入 -->
+            <form id="taskForm" class="p-6 space-y-4">
+                <!-- 任務名稱 -->
+                <div>
+                    <label class="block text-sm font-medium text-secondary-700 mb-2">任務名稱</label>
+                    <input type="text" id="taskName" required 
+                           class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                           placeholder="輸入任務名稱">
+                </div>
+                
+                <!-- 時間範圍：視覺化友好的日期選擇 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-secondary-700 mb-2">開始日期</label>
+                        <input type="date" id="startDate" required
+                               class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-secondary-700 mb-2">結束日期</label>
+                        <input type="date" id="endDate" required
+                               class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                    </div>
+                </div>
+                
+                <!-- 進度滑桿：直觀的進度控制 -->
+                <div>
+                    <label class="block text-sm font-medium text-secondary-700 mb-2">
+                        完成進度：<span id="progressDisplay">0%</span>
+                    </label>
+                    <input type="range" id="progress" min="0" max="100" value="0"
+                           class="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer slider">
+                </div>
+                
+                <!-- 優先級選擇：色彩編碼的視覺層次 -->
+                <div>
+                    <label class="block text-sm font-medium text-secondary-700 mb-2">優先級</label>
+                    <select id="priority" class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+                        <option value="low">低</option>
+                        <option value="medium" selected>中</option>
+                        <option value="high">高</option>
+                    </select>
+                </div>
+                
+                <!-- 操作按鈕：清晰的行動導向設計 -->
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancelBtn" 
+                            class="flex-1 px-4 py-2 bg-secondary-100 text-secondary-700 rounded-lg font-medium transition-all duration-200 hover:bg-secondary-200 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2">
+                        取消
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        儲存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 隱藏彩蛋：驚喜互動元素 -->
+    <div class="easter-egg" id="easterEgg" title="點擊獲得驚喜！"></div>
+    
+    <!-- 彩蛋模態框：趣味小遊戲 -->
+    <div id="easterModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 m-4 max-w-sm text-center transform transition-all duration-500 scale-95 opacity-0" id="easterContent">
+            <div class="text-6xl mb-4">🎉</div>
+            <h3 class="text-2xl font-bold text-primary-600 mb-4">恭喜發現彩蛋！</h3>
+            <p class="text-secondary-600 mb-6">專案管理大師，您已掌握了時間的藝術！</p>
+            <div class="mb-6">
+                <div class="text-4xl font-bold text-primary-500" id="productivityScore">95%</div>
+                <div class="text-sm text-secondary-500">生產力評分</div>
+            </div>
+            <button id="closeEasterBtn" class="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-primary-700">
+                繼續工作
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 專案管理工具核心 JavaScript
+        // 採用模組化架構，確保代碼可維護性與擴展性
+        
+        class GanttChartManager {
+            constructor() {
+                // 初始化應用狀態與資料結構
+                this.tasks = this.loadTasks(); // 從 localStorage 載入任務
+                this.currentEditingTask = null; // 目前編輯的任務
+                this.isDragging = false; // 拖拽狀態追蹤
+                this.timeRange = 'month'; // 預設顯示範圍
+                
+                // 初始化應用
+                this.initializeApp();
+            }
+            
+            // 應用初始化：設定事件監聽與初始渲染
+            initializeApp() {
+                this.setupEventListeners();
+                this.setupEasterEgg();
+                this.renderTaskList();
+                this.renderGanttChart();
+                this.updateDateInputs();
+                
+                // 初始化進度滑桿顯示
+                this.updateProgressDisplay();
+                
+                console.log('甘特圖專案管理工具已初始化完成');
+            }
+            
+            // 事件監聽器設定：集中管理所有使用者互動
+            setupEventListeners() {
+                // 新增任務按鈕
+                document.getElementById('addTaskBtn').addEventListener('click', () => {
+                    this.openTaskModal();
+                });
+                
+                // 表單提交處理
+                document.getElementById('taskForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveTask();
+                });
+                
+                // 模態框控制
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    this.closeTaskModal();
+                });
+                
+                // 進度滑桿即時更新
+                document.getElementById('progress').addEventListener('input', (e) => {
+                    this.updateProgressDisplay(e.target.value);
+                });
+                
+                // 時間範圍選擇
+                document.getElementById('timeRange').addEventListener('change', (e) => {
+                    this.timeRange = e.target.value;
+                    this.renderGanttChart();
+                });
+                
+                // 匯出功能
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportTasks();
+                });
+                
+                // 模態框背景點擊關閉
+                document.getElementById('taskModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'taskModal') {
+                        this.closeTaskModal();
+                    }
+                });
+                
+                // 觸控與滾動事件優化
+                this.setupTouchEvents();
+            }
+            
+            // 觸控事件設定：行動裝置最佳化
+            setupTouchEvents() {
+                const ganttContainer = document.getElementById('ganttContainer');
+                let touchStartX = 0;
+                let touchStartY = 0;
+                
+                ganttContainer.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }, { passive: true });
+                
+                ganttContainer.addEventListener('touchmove', (e) => {
+                    // 預防意外的頁面滾動
+                    const touchX = e.touches[0].clientX;
+                    const touchY = e.touches[0].clientY;
+                    const deltaX = Math.abs(touchX - touchStartX);
+                    const deltaY = Math.abs(touchY - touchStartY);
+                    
+                    if (deltaX > deltaY) {
+                        e.preventDefault(); // 水平滾動時阻止垂直滾動
+                    }
+                }, { passive: false });
+            }
+            
+            // 任務資料管理：CRUD 操作與持久化
+            loadTasks() {
+                try {
+                    const stored = localStorage.getItem('gantt-tasks');
+                    return stored ? JSON.parse(stored) : this.getDefaultTasks();
+                } catch (error) {
+                    console.warn('載入任務資料失敗，使用預設資料:', error);
+                    return this.getDefaultTasks();
+                }
+            }
+            
+            saveTasks() {
+                try {
+                    localStorage.setItem('gantt-tasks', JSON.stringify(this.tasks));
+                    console.log('任務資料已儲存至 localStorage');
+                } catch (error) {
+                    console.error('儲存任務資料失敗:', error);
+                }
+            }
+            
+            // 預設示範任務：展示工具功能
+            getDefaultTasks() {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                const nextWeek = new Date(today);
+                nextWeek.setDate(today.getDate() + 7);
+                
+                return [
+                    {
+                        id: 1,
+                        name: '專案規劃與需求分析',
+                        startDate: today.toISOString().split('T')[0],
+                        endDate: tomorrow.toISOString().split('T')[0],
+                        progress: 100,
+                        priority: 'high'
+                    },
+                    {
+                        id: 2,
+                        name: 'UI/UX 設計開發',
+                        startDate: tomorrow.toISOString().split('T')[0],
+                        endDate: nextWeek.toISOString().split('T')[0],
+                        progress: 65,
+                        priority: 'medium'
+                    }
+                ];
+            }
+            
+            // 任務表單處理：新增與編輯邏輯
+            openTaskModal(task = null) {
+                this.currentEditingTask = task;
+                const modal = document.getElementById('taskModal');
+                const modalContent = document.getElementById('modalContent');
+                const title = document.getElementById('modalTitle');
+                
+                // 設定模態框標題與表單資料
+                if (task) {
+                    title.textContent = '編輯任務';
+                    this.populateForm(task);
+                } else {
+                    title.textContent = '新增任務';
+                    this.resetForm();
+                }
+                
+                // 顯示模態框動畫
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                // 延遲動畫確保平滑過渡
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                
+                // 自動聚焦到任務名稱輸入框
+                setTimeout(() => {
+                    document.getElementById('taskName').focus();
+                }, 200);
+            }
+            
+            closeTaskModal() {
+                const modal = document.getElementById('taskModal');
+                const modalContent = document.getElementById('modalContent');
+                
+                // 關閉動畫
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    this.currentEditingTask = null;
+                }, 300);
+            }
+            
+            populateForm(task) {
+                document.getElementById('taskName').value = task.name;
+                document.getElementById('startDate').value = task.startDate;
+                document.getElementById('endDate').value = task.endDate;
+                document.getElementById('progress').value = task.progress;
+                document.getElementById('priority').value = task.priority;
+                this.updateProgressDisplay(task.progress);
+            }
+            
+            resetForm() {
+                document.getElementById('taskForm').reset();
+                this.updateDateInputs();
+                this.updateProgressDisplay(0);
+            }
+            
+            saveTask() {
+                // 表單驗證與資料收集
+                const formData = this.getFormData();
+                if (!this.validateTask(formData)) {
+                    return;
+                }
+                
+                if (this.currentEditingTask) {
+                    // 更新既有任務
+                    Object.assign(this.currentEditingTask, formData);
+                } else {
+                    // 新增任務
+                    formData.id = Date.now(); // 簡單的 ID 生成
+                    this.tasks.push(formData);
+                }
+                
+                // 儲存並更新視圖
+                this.saveTasks();
+                this.renderTaskList();
+                this.renderGanttChart();
+                this.closeTaskModal();
+                
+                // 使用者回饋
+                this.showNotification('任務已成功儲存！', 'success');
+            }
+            
+            getFormData() {
+                return {
+                    name: document.getElementById('taskName').value.trim(),
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    progress: parseInt(document.getElementById('progress').value),
+                    priority: document.getElementById('priority').value
+                };
+            }
+            
+            validateTask(task) {
+                // 基本驗證邏輯
+                if (!task.name) {
+                    this.showNotification('請輸入任務名稱', 'error');
+                    return false;
+                }
+                
+                if (!task.startDate || !task.endDate) {
+                    this.showNotification('請選擇開始和結束日期', 'error');
+                    return false;
+                }
+                
+                if (new Date(task.startDate) > new Date(task.endDate)) {
+                    this.showNotification('結束日期不能早於開始日期', 'error');
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            deleteTask(taskId) {
+                if (confirm('確定要刪除此任務嗎？')) {
+                    this.tasks = this.tasks.filter(task => task.id !== taskId);
+                    this.saveTasks();
+                    this.renderTaskList();
+                    this.renderGanttChart();
+                    this.showNotification('任務已刪除', 'success');
+                }
+            }
+            
+            // 視圖渲染：任務列表與甘特圖
+            renderTaskList() {
+                const container = document.getElementById('taskList');
+                
+                if (this.tasks.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-secondary-500">
+                            <i class="fas fa-tasks text-4xl mb-4 opacity-50"></i>
+                            <p>尚未建立任務</p>
+                            <p class="text-sm">點擊上方「新增任務」開始使用</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = this.tasks.map(task => {
+                    const priorityColors = {
+                        high: 'bg-red-100 text-red-800 border-red-200',
+                        medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                        low: 'bg-green-100 text-green-800 border-green-200'
+                    };
+                    
+                    const priorityLabels = {
+                        high: '高',
+                        medium: '中',
+                        low: '低'
+                    };
+                    
+                    return `
+                        <div class="bg-white rounded-lg shadow-card border border-secondary-200 p-4 transition-all duration-200 hover:shadow-soft cursor-pointer" 
+                             onclick="ganttManager.openTaskModal(ganttManager.tasks.find(t => t.id === ${task.id}))">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-semibold text-secondary-900 text-responsive line-clamp-2">${task.name}</h3>
+                                <button onclick="event.stopPropagation(); ganttManager.deleteTask(${task.id})" 
+                                        class="text-secondary-400 hover:text-red-500 transition-colors duration-200 p-1 touch-target">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-sm text-secondary-600">
+                                    <span><i class="fas fa-calendar mr-1"></i>${this.formatDate(task.startDate)}</span>
+                                    <span><i class="fas fa-calendar-check mr-1"></i>${this.formatDate(task.endDate)}</span>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs px-2 py-1 rounded-full border ${priorityColors[task.priority]}">
+                                        ${priorityLabels[task.priority]}優先級
+                                    </span>
+                                    <span class="text-sm font-medium text-primary-600">${task.progress}%</span>
+                                </div>
+                                
+                                <div class="w-full bg-secondary-200 rounded-full h-2">
+                                    <div class="progress-fill h-2 rounded-full" style="width: ${task.progress}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // 甘特圖 SVG 渲染：核心視覺化邏輯
+            renderGanttChart() {
+                const svg = document.getElementById('ganttChart');
+                const container = document.getElementById('ganttContainer');
+                
+                if (this.tasks.length === 0) {
+                    svg.innerHTML = `
+                        <text x="50%" y="50%" text-anchor="middle" fill="#94a3b8" font-size="16" font-family="Inter, sans-serif">
+                            建立您的第一個任務以查看甘特圖
+                        </text>
+                    `;
+                    return;
+                }
+                
+                // 計算時間範圍與尺寸
+                const { startDate, endDate, totalDays } = this.calculateTimeRange();
+                const taskHeight = 40;
+                const taskSpacing = 20;
+                const headerHeight = 60;
+                const leftPadding = 20;
+                const dayWidth = 50;
+                
+                const chartWidth = Math.max(totalDays * dayWidth + leftPadding * 2, container.clientWidth);
+                const chartHeight = this.tasks.length * (taskHeight + taskSpacing) + headerHeight + 40;
+                
+                // 設定 SVG 尺寸
+                svg.setAttribute('width', chartWidth);
+                svg.setAttribute('height', chartHeight);
+                svg.style.minWidth = chartWidth + 'px';
+                
+                // 清空並重新繪製
+                svg.innerHTML = '';
+                
+                // 繪製時間軸表頭
+                this.renderTimeAxis(svg, startDate, endDate, totalDays, dayWidth, headerHeight, leftPadding);
+                
+                // 繪製網格線
+                this.renderGridLines(svg, totalDays, dayWidth, chartHeight, headerHeight, leftPadding);
+                
+                // 繪製任務條
+                this.renderTaskBars(svg, startDate, totalDays, dayWidth, taskHeight, taskSpacing, headerHeight, leftPadding);
+            }
+            
+            renderTimeAxis(svg, startDate, endDate, totalDays, dayWidth, headerHeight, leftPadding) {
+                // 背景區域
+                const headerBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                headerBg.setAttribute('x', '0');
+                headerBg.setAttribute('y', '0');
+                headerBg.setAttribute('width', '100%');
+                headerBg.setAttribute('height', headerHeight);
+                headerBg.setAttribute('fill', '#f8fafc');
+                headerBg.setAttribute('stroke', '#e2e8f0');
+                svg.appendChild(headerBg);
+                
+                // 日期標籤
+                for (let i = 0; i < totalDays; i++) {
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + i);
+                    
+                    const x = leftPadding + i * dayWidth + dayWidth / 2;
+                    
+                    // 日期文字
+                    const dateText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    dateText.setAttribute('x', x);
+                    dateText.setAttribute('y', 25);
+                    dateText.setAttribute('text-anchor', 'middle');
+                    dateText.setAttribute('fill', '#475569');
+                    dateText.setAttribute('font-size', '12');
+                    dateText.setAttribute('font-family', 'Inter, sans-serif');
+                    dateText.textContent = this.formatShortDate(currentDate);
+                    svg.appendChild(dateText);
+                    
+                    // 星期文字
+                    const dayText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    dayText.setAttribute('x', x);
+                    dayText.setAttribute('y', 45);
+                    dayText.setAttribute('text-anchor', 'middle');
+                    dayText.setAttribute('fill', '#94a3b8');
+                    dayText.setAttribute('font-size', '10');
+                    dayText.setAttribute('font-family', 'Inter, sans-serif');
+                    dayText.textContent = ['日', '一', '二', '三', '四', '五', '六'][currentDate.getDay()];
+                    svg.appendChild(dayText);
+                }
+            }
+            
+            renderGridLines(svg, totalDays, dayWidth, chartHeight, headerHeight, leftPadding) {
+                // 垂直網格線
+                for (let i = 0; i <= totalDays; i++) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    const x = leftPadding + i * dayWidth;
+                    
+                    line.setAttribute('x1', x);
+                    line.setAttribute('y1', headerHeight);
+                    line.setAttribute('x2', x);
+                    line.setAttribute('y2', chartHeight);
+                    line.setAttribute('class', i % 7 === 0 ? 'grid-line major' : 'grid-line');
+                    svg.appendChild(line);
+                }
+                
+                // 水平網格線
+                this.tasks.forEach((task, index) => {
+                    const y = headerHeight + (index + 1) * 60;
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    
+                    line.setAttribute('x1', '0');
+                    line.setAttribute('y1', y);
+                    line.setAttribute('x2', '100%');
+                    line.setAttribute('y2', y);
+                    line.setAttribute('class', 'grid-line');
+                    svg.appendChild(line);
+                });
+            }
+            
+            renderTaskBars(svg, startDate, totalDays, dayWidth, taskHeight, taskSpacing, headerHeight, leftPadding) {
+                this.tasks.forEach((task, index) => {
+                    const taskStart = new Date(task.startDate);
+                    const taskEnd = new Date(task.endDate);
+                    
+                    // 計算任務條位置與尺寸
+                    const startDay = Math.floor((taskStart - startDate) / (1000 * 60 * 60 * 24));
+                    const duration = Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const x = leftPadding + startDay * dayWidth;
+                    const y = headerHeight + index * (taskHeight + taskSpacing) + taskSpacing / 2;
+                    const width = duration * dayWidth - 4; // 留小間距
+                    
+                    // 優先級顏色
+                    const priorityColors = {
+                        high: '#ef4444',
+                        medium: '#f59e0b',
+                        low: '#10b981'
+                    };
+                    
+                    // 任務條背景
+                    const taskRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    taskRect.setAttribute('x', x);
+                    taskRect.setAttribute('y', y);
+                    taskRect.setAttribute('width', width);
+                    taskRect.setAttribute('height', taskHeight);
+                    taskRect.setAttribute('fill', '#e2e8f0');
+                    taskRect.setAttribute('rx', '6');
+                    taskRect.setAttribute('class', 'task-bar');
+                    svg.appendChild(taskRect);
+                    
+                    // 進度條
+                    const progressRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    progressRect.setAttribute('x', x);
+                    progressRect.setAttribute('y', y);
+                    progressRect.setAttribute('width', width * (task.progress / 100));
+                    progressRect.setAttribute('height', taskHeight);
+                    progressRect.setAttribute('fill', priorityColors[task.priority]);
+                    progressRect.setAttribute('rx', '6');
+                    svg.appendChild(progressRect);
+                    
+                    // 任務名稱
+                    const taskText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    taskText.setAttribute('x', x + 8);
+                    taskText.setAttribute('y', y + taskHeight / 2 + 5);
+                    taskText.setAttribute('fill', 'white');
+                    taskText.setAttribute('font-size', '12');
+                    taskText.setAttribute('font-weight', '500');
+                    taskText.setAttribute('font-family', 'Inter, sans-serif');
+                    taskText.textContent = task.name.length > 20 ? task.name.substring(0, 20) + '...' : task.name;
+                    svg.appendChild(taskText);
+                    
+                    // 進度百分比
+                    if (task.progress > 0) {
+                        const progressText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        progressText.setAttribute('x', x + width - 8);
+                        progressText.setAttribute('y', y + taskHeight / 2 + 4);
+                        progressText.setAttribute('text-anchor', 'end');
+                        progressText.setAttribute('fill', 'white');
+                        progressText.setAttribute('font-size', '11');
+                        progressText.setAttribute('font-weight', '600');
+                        progressText.setAttribute('font-family', 'Inter, sans-serif');
+                        progressText.textContent = `${task.progress}%`;
+                        svg.appendChild(progressText);
+                    }
+                });
+            }
+            
+            // 時間計算輔助函數
+            calculateTimeRange() {
+                const taskDates = this.tasks.flatMap(task => [
+                    new Date(task.startDate),
+                    new Date(task.endDate)
+                ]);
+                
+                const minDate = new Date(Math.min(...taskDates));
+                const maxDate = new Date(Math.max(...taskDates));
+                
+                // 擴展範圍以提供更好的視覺效果
+                const startDate = new Date(minDate);
+                startDate.setDate(minDate.getDate() - 3);
+                
+                const endDate = new Date(maxDate);
+                endDate.setDate(maxDate.getDate() + 3);
+                
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                
+                return { startDate, endDate, totalDays };
+            }
+            
+            // 使用者體驗輔助功能
+            updateProgressDisplay(value = 0) {
+                document.getElementById('progressDisplay').textContent = `${value}%`;
+            }
+            
+            updateDateInputs() {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                
+                document.getElementById('startDate').value = today.toISOString().split('T')[0];
+                document.getElementById('endDate').value = tomorrow.toISOString().split('T')[0];
+            }
+            
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-TW', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+            
+            formatShortDate(date) {
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            }
+            
+            showNotification(message, type = 'info') {
+                // 簡單的通知實現
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-full opacity-0`;
+                
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    info: 'bg-blue-500'
+                };
+                
+                notification.classList.add(colors[type]);
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // 顯示動畫
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full', 'opacity-0');
+                }, 100);
+                
+                // 自動隱藏
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+            
+            // 資料匯出功能
+            exportTasks() {
+                const exportData = {
+                    tasks: this.tasks,
+                    exportDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `專案任務_${new Date().toLocaleDateString('zh-TW').replace(/\//g, '')}.json`;
+                link.click();
+                
+                this.showNotification('任務資料已匯出', 'success');
+            }
+            
+            // 隱藏彩蛋功能：為用戶帶來驚喜
+            setupEasterEgg() {
+                const easterEgg = document.getElementById('easterEgg');
+                const easterModal = document.getElementById('easterModal');
+                const easterContent = document.getElementById('easterContent');
+                const closeEasterBtn = document.getElementById('closeEasterBtn');
+                const scoreElement = document.getElementById('productivityScore');
+                
+                // 彩蛋觸發邏輯
+                easterEgg.addEventListener('click', () => {
+                    // 計算生產力評分（基於任務完成度）
+                    const averageProgress = this.tasks.length > 0 
+                        ? Math.round(this.tasks.reduce((sum, task) => sum + task.progress, 0) / this.tasks.length)
+                        : Math.floor(Math.random() * 30) + 70; // 隨機評分
+                    
+                    scoreElement.textContent = `${averageProgress}%`;
+                    
+                    // 顯示彩蛋模態框
+                    easterModal.classList.remove('hidden');
+                    easterModal.classList.add('flex');
+                    
+                    setTimeout(() => {
+                        easterContent.classList.remove('scale-95', 'opacity-0');
+                        easterContent.classList.add('scale-100', 'opacity-100');
+                    }, 50);
+                    
+                    // 音效模擬（視覺化）
+                    this.playVisualSound();
+                });
+                
+                // 關閉彩蛋
+                closeEasterBtn.addEventListener('click', () => {
+                    easterContent.classList.remove('scale-100', 'opacity-100');
+                    easterContent.classList.add('scale-95', 'opacity-0');
+                    
+                    setTimeout(() => {
+                        easterModal.classList.add('hidden');
+                        easterModal.classList.remove('flex');
+                    }, 300);
+                });
+                
+                // 背景點擊關閉
+                easterModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'easterModal') {
+                        closeEasterBtn.click();
+                    }
+                });
+            }
+            
+            // 視覺音效：透過動畫模擬音效體驗
+            playVisualSound() {
+                const easterEgg = document.getElementById('easterEgg');
+                
+                // 創建漣漪效果
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        const ripple = document.createElement('div');
+                        ripple.style.cssText = `
+                            position: fixed;
+                            bottom: 20px;
+                            right: 20px;
+                            width: 20px;
+                            height: 20px;
+                            border: 2px solid #3b82f6;
+                            border-radius: 50%;
+                            pointer-events: none;
+                            z-index: 9998;
+                            animation: ripple 1s ease-out forwards;
+                        `;
+                        
+                        document.body.appendChild(ripple);
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(ripple);
+                        }, 1000);
+                    }, i * 200);
+                }
+                
+                // CSS 動畫定義
+                if (!document.querySelector('#ripple-keyframes')) {
+                    const style = document.createElement('style');
+                    style.id = 'ripple-keyframes';
+                    style.textContent = `
+                        @keyframes ripple {
+                            to {
+                                transform: scale(4);
+                                opacity: 0;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+        }
+        
+        // 應用啟動：等待 DOM 載入完成
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化全域甘特圖管理器
+            window.ganttManager = new GanttChartManager();
+            
+            // 響應式視窗調整處理
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    ganttManager.renderGanttChart();
+                }, 250); // 防抖動處理
+            });
+            
+            // PWA 支援準備（未來擴展）
+            if ('serviceWorker' in navigator) {
+                console.log('此瀏覽器支援 PWA 功能');
+            }
+            
+            console.log('專案時程管理工具已完全載入');
+        });
+        
+        // 錯誤處理：全域錯誤捕獲
+        window.addEventListener('error', (e) => {
+            console.error('應用發生錯誤:', e.error);
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('未處理的 Promise 拒絕:', e.reason);
+        });
+    </script>
+</body>
+</html>
