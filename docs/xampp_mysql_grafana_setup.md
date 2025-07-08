@@ -67,31 +67,47 @@ CREATE DATABASE depression_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ### 步驟 1: 建立虛擬環境
 
-在專案根目錄下執行以下指令：
+#### 🍎 macOS / Linux
 
 ```bash
-# 建立虛擬環境
-python -m venv venv
+# 使用 uv (推薦)
+pip install uv
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 
-# 啟動虛擬環境
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
+# 或使用傳統方式
+python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### 🪟 Windows
+
+```cmd
+REM 使用 uv (推薦)
+pip install uv
+uv venv .venv
+.venv\Scripts\activate
+uv pip install -r requirements.txt
+
+REM 或使用傳統方式
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ### 步驟 2: 安裝相依套件
 
-```bash
-# 安裝所有必要套件
-pip install -r requirements.txt
+(已包含於上方步驟，無需重複)
 
-# 驗證安裝
+### 步驟 3: 驗證安裝
+
+```bash
 python test_project.py
 ```
 
-### 步驟 3: 匯出資料至 MySQL
+### 步驟 4: 匯出資料至 MySQL
 
 執行以下指令將分析結果匯出至 MySQL：
 
